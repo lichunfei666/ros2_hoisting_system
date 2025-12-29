@@ -29,8 +29,8 @@ Makefile
 __pycache__/
 
 # Build artifacts
-*.so
-*.a
-*.lib
 *.dll
 *.exe
+
+# Large files from DJI PSDK samples
+src/dji_psdk_wrapper/third_party/dji_psdk/samples/sample_c++/module_sample/liveview/data/tensorflow/frozen_inference_graph.pb
