@@ -4,7 +4,6 @@ install/
 log/
 
 # IDE directories and files
-.vscode/
 .idea/
 *.swp
 *.swo

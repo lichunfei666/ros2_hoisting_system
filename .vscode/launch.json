@@ -1,0 +1,53 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug dji_psdk_node",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/dji_psdk_wrapper/dji_psdk_node",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/install/dji_psdk_wrapper/lib/dji_psdk_wrapper:${env:LD_LIBRARY_PATH}"
+                },
+                {
+                    "name": "ROS_PACKAGE_PATH",
+                    "value": "${workspaceFolder}:${env:ROS_PACKAGE_PATH}"
+                },
+                {
+                    "name": "ROS_DISTRO",
+                    "value": "jazzy"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Build dji_psdk_wrapper"
+        },
+        {
+            "name": "Firefox 实时调试网页",
+            "type": "firefox",
+            "request": "launch",
+            "reAttach": true,
+            "file": "${workspaceFolder}/src/ground_station/resources/index.html",
+            "firefoxExecutable": "/usr/bin/firefox",
+            "port": 6001,
+            "timeout": 15000
+        }
+    ]
+}
