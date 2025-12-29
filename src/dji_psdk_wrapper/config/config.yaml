@@ -1,0 +1,63 @@
+# PSDK配置文件
+# 用于配置DJI PSDK的各种参数
+
+# 应用信息配置
+dji_sdk_app_info:
+  user_app_name: "fc30_fly_demo"
+  user_app_id: "174419"
+  user_app_key: "483c28bafadf6036f15559d705b7421"
+  user_app_license: "19Jn/T6HDi3eArfcBn3DZ9dlubAcEqYZbCJ0BOD5eGVuXDdd7TFNDzeUsplTHr3yEjCY/9JIMvZlCbP5x0mvimgaH9YGe1iH9Zz8hc9OpUZs0/bCm4soW3PRBHrbIkFFAsF9s3Zr5t6LcmJX7/+ftafRALO96h9zNcsnCd4LDwkH5N15LTmBIlODslTORe5sIEoUGPr+Mqol+FUKOu/mpDmlrE0avvdn8z7Ld/dLMtcLJX2uisvk9C6Jax6I7Znz3A9WP8RNYRwjiV3cMGbn6HlAvG4SQh4sI41B503xyXbK92M5PfhTo/xlogtBtQ60NETqkHp0HKvqwRy1xhqqkw=="
+  user_develop_account: "1504885766@qq.com"
+  user_baud_rate: "460800"
+
+# PSDK核心配置
+psdk:
+  # 串口波特率设置
+  baud_rate: 460800
+  
+  # 其他PSDK配置参数
+  app_name: "DJI_PSDK_Wrapper"
+
+# 日志配置
+logger:
+  level: "DEBUG"  # 日志级别: DEBUG, INFO, WARNING, ERROR, FATAL
+  console_output: true  # 是否输出到控制台
+  file_output: true  # 是否输出到文件
+  log_file: "./psdk.log"  # 日志文件路径
+  log_rotation_size: 10485760  # 日志文件大小限制（字节），默认10MB
+
+# PSDK 线程配置
+thread:
+  priority: 99  # 线程优先级（Linux: 0-99, Windows: THREAD_PRIORITY_NORMAL等）
+  affinity: -1  # CPU亲和性，-1表示不设置，0表示第一个CPU核心
+
+# 状态更新频率配置（毫秒）
+update_frequency:
+  vehicle_state: 100  # 车辆状态更新频率（10Hz）
+  gps_data: 100       # GPS数据更新频率（10Hz）
+  imu_data: 100       # IMU数据更新频率（10Hz）
+  battery_info: 1000  # 电池信息更新频率（1Hz）
+
+# 安全配置
+safety:
+  emergency_timeout: 5000  # 紧急操作超时时间（毫秒）
+  max_retries: 3           # 操作最大重试次数
+  connection_check_interval: 1000  # 连接检查间隔（毫秒）
+
+# 性能监控配置
+performance:
+  enable_monitoring: true  # 是否启用性能监控
+  stats_report_interval: 10000  # 统计报告间隔（毫秒）
+
+# 错误处理配置
+error_handling:
+  auto_reconnect: true  # 是否自动重连
+  reconnect_interval: 2000  # 重连间隔（毫秒）
+  max_reconnect_attempts: 5  # 最大重连次数
+  auto_reset_on_fatal: true  # 致命错误时是否自动重置
+
+# 调试配置
+debug:
+  enable_debug_prints: false  # 是否启用调试打印
+  print_state_changes: true   # 是否打印状态变化
+  log_callback_calls: false   # 是否记录回调函数调用

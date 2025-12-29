@@ -1,0 +1,40 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 100.0  # 100 Hz
+    use_sim_time: true
+
+front_left_velocity_controller:
+  type: velocity_controllers/JointVelocityController
+  ros__parameters:
+    joint: rotor_front_left_joint
+    pid:
+      p: 1.0
+      i: 0.0
+      d: 0.0
+
+front_right_velocity_controller:
+  type: velocity_controllers/JointVelocityController
+  ros__parameters:
+    joint: rotor_front_right_joint
+    pid:
+      p: 1.0
+      i: 0.0
+      d: 0.0
+
+back_left_velocity_controller:
+  type: velocity_controllers/JointVelocityController
+  ros__parameters:
+    joint: rotor_back_left_joint
+    pid:
+      p: 1.0
+      i: 0.0
+      d: 0.0
+
+back_right_velocity_controller:
+  type: velocity_controllers/JointVelocityController
+  ros__parameters:
+    joint: rotor_back_right_joint
+    pid:
+      p: 1.0
+      i: 0.0
+      d: 0.0

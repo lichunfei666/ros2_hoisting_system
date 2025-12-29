@@ -1,0 +1,3 @@
+# 设置PSDK相关环境变量
+prepend-non-duplicate;PSDK_CONFIG_PATH;{prefix}/share/dji_psdk_wrapper/config
+prepend-non-duplicate;PSDK_LOG_PATH;{prefix}/log

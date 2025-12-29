@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROS2智能吊装系统地面站</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <!-- ROS2 Web通信库 -->
+    <script src="ros_communication.js"></script>
+    
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0f4c81',
+                        secondary: '#1e88e5',
+                        accent: '#00bcd4',
+                        warning: '#ff9800',
+                        danger: '#f44336',
+                        success: '#4caf50',
+                        dark: '#0a1929',
+                        'dark-blue': '#0a2463',
+                        'light-blue': '#4299e1',
+                        'dark-gray': '#2d3748',
+                        'light-gray': '#e2e8f0'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 15px rgba(66, 153, 225, 0.5)',
+                        'inner-glow': 'inset 0 0 15px rgba(66, 153, 225, 0.2)'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .glass-effect {
+                background: rgba(15, 76, 129, 0.7);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .glass-effect-light {
+                background: rgba(255, 255, 255, 0.1);
+                backdrop-filter: blur(5px);
+                -webkit-backdrop-filter: blur(5px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            }
+            .border-gradient {
+                border-image: linear-gradient(to right, #4299e1, #00bcd4) 1;
+            }
+            .animate-pulse-slow {
+                animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            .animate-fade-in {
+                animation: fadeIn 0.5s ease-in-out;
+            }
+            .scrollbar-thin {
+                scrollbar-width: thin;
+            }
+            .scrollbar-thin::-webkit-scrollbar {
+                width: 5px;
+            }
+            .scrollbar-thin::-webkit-scrollbar-track {
+                background: rgba(255, 255, 255, 0.1);
+            }
+            .scrollbar-thin::-webkit-scrollbar-thumb {
+                background: rgba(66, 153, 225, 0.5);
+                border-radius: 5px;
+            }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-dark to-dark-blue min-h-screen text-white font-sans overflow-hidden">
+    <!-- 顶部导航栏 -->
+    <header class="glass-effect sticky top-0 z-50 border-b border-light-blue/30">
+        <div class="container mx-auto px-4 py-2 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i class="fa fa-cube text-accent text-2xl"></i>
+                <h1 class="text-xl font-bold text-shadow">ROS2智能吊装系统</h1>
+            </div>
+            <div class="flex items-center space-x-6">
+                <div class="hidden md:flex items-center space-x-4">
+                    <span class="text-sm text-light-blue">系统状态:</span>
+                    <span id="system-status" class="px-3 py-1 rounded-full bg-success/20 text-success text-sm font-medium">正常运行</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-2">
+                    <i class="fa fa-clock-o text-light-blue"></i>
+                    <span id="current-time" class="text-sm">2023-07-21 15:30:45</span>
+                </div>
+                <button id="emergency-btn" class="flex items-center space-x-2 px-4 py-2 bg-danger hover:bg-danger/80 text-white rounded-lg transition-all duration-300 hover:shadow-glow">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    <span class="font-bold">紧急停止</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+        <main id="main-content" class="container mx-auto px-2 py-2 flex flex-col lg:flex-row gap-2 h-[calc(100vh-70px)] overflow-hidden">
+        <!-- 左侧控制面板 -->
+        <aside class="flex-1 lg:flex-[0_0_25%] glass-effect rounded-xl p-2 flex flex-col space-y-2 min-w-[250px] max-w-[300px] overflow-y-auto scrollbar-thin">
+            <div>
+                <h2 class="text-lg font-semibold mb-3 flex items-center">
+                    <i class="fa fa-tasks mr-2 text-accent"></i>
+                    任务控制
+                </h2>
+                <div class="space-y-2">
+                    <div class="glass-effect-light rounded-lg p-2">
+                        <h3 class="text-sm font-medium text-light-blue mb-2">当前任务</h3>
+                        <div id="current-mission" class="text-center py-2 text-sm">
+                            <span class="bg-dark-gray/50 px-3 py-1 rounded-full">等待任务分配</span>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-effect-light rounded-lg p-2">
+                        <h3 class="text-sm font-medium text-light-blue mb-2">任务阶段</h3>
+                        <div class="relative pt-1">
+                            <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-dark-gray/50">
+                                <div id="mission-progress" style="width: 0%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-secondary to-accent"></div>
+                            </div>
+                            <div id="mission-phase" class="text-center text-sm">未开始</div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-1.5">
+                        <button id="start-mission-btn" class="w-full flex items-center justify-center space-x-3 px-5 py-4 bg-secondary hover:bg-secondary/80 text-white rounded-lg transition-all duration-300 text-base font-medium">
+                            <i class="fa fa-play text-lg"></i>
+                            <span>开始任务</span>
+                        </button>
+                        <button id="pause-mission-btn" class="w-full flex items-center justify-center space-x-3 px-5 py-4 bg-warning/80 hover:bg-warning text-white rounded-lg transition-all duration-300 text-base font-medium" disabled>
+                            <i class="fa fa-pause text-lg"></i>
+                            <span>暂停任务</span>
+                        </button>
+                        <button id="abort-mission-btn" class="w-full flex items-center justify-center space-x-3 px-5 py-4 bg-danger/80 hover:bg-danger text-white rounded-lg transition-all duration-300 text-base font-medium" disabled>
+                            <i class="fa fa-stop text-lg"></i>
+                            <span>中止任务</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h2 class="text-lg font-semibold mb-3 flex items-center">
+                    <i class="fa fa-sliders mr-2 text-accent"></i>
+                    设备控制
+                </h2>
+                <div class="space-y-3">
+                    <div class="glass-effect-light rounded-lg p-2">
+                        <h3 class="text-sm font-medium text-light-blue mb-2">无人机控制</h3>
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <button class="drone-btn flex items-center justify-center space-x-1 px-3 py-2 bg-secondary/70 hover:bg-secondary text-white rounded-lg transition-all duration-300 text-sm">
+                                <i class="fa fa-arrow-up"></i>
+                                <span>起飞</span>
+                            </button>
+                            <button class="drone-btn flex items-center justify-center space-x-1 px-3 py-2 bg-secondary/70 hover:bg-secondary text-white rounded-lg transition-all duration-300 text-sm">
+                                <i class="fa fa-arrow-down"></i>
+                                <span>降落</span>
+                            </button>
+                            <button class="drone-btn flex items-center justify-center space-x-1 px-3 py-2 bg-secondary/70 hover:bg-secondary text-white rounded-lg transition-all duration-300 text-sm">
+                                <i class="fa fa-refresh"></i>
+                                <span>悬停</span>
+                            </button>
+                            <button class="drone-btn flex items-center justify-center space-x-1 px-3 py-2 bg-secondary/70 hover:bg-secondary text-white rounded-lg transition-all duration-300 text-sm">
+                                <i class="fa fa-home"></i>
+                                <span>返航</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-effect-light rounded-lg p-2">
+                        <h3 class="text-sm font-medium text-light-blue mb-2">挂钩控制</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="hook-btn flex items-center justify-center space-x-1 px-3 py-2 bg-secondary/70 hover:bg-secondary text-white rounded-lg transition-all duration-300 text-sm">
+                                <i class="fa fa-lock-open"></i>
+                                <span>打开</span>
+                            </button>
+                            <button class="hook-btn flex items-center justify-center space-x-1 px-3 py-2 bg-secondary/70 hover:bg-secondary text-white rounded-lg transition-all duration-300 text-sm">
+                                <i class="fa fa-lock"></i>
+                                <span>关闭</span>
+                            </button>
+                            <button class="hook-btn flex items-center justify-center space-x-1 px-3 py-2 bg-warning/70 hover:bg-warning text-white rounded-lg transition-all duration-300 text-sm">
+                                <i class="fa fa-check-square-o"></i>
+                                <span>锁定</span>
+                            </button>
+                            <button class="hook-btn flex items-center justify-center space-x-1 px-3 py-2 bg-danger/70 hover:bg-danger text-white rounded-lg transition-all duration-300 text-sm">
+                                <i class="fa fa-exclamation-circle"></i>
+                                <span>释放</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-effect-light rounded-lg p-2">
+                        <h3 class="text-sm font-medium text-light-blue mb-2">机器人控制</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="robot-btn flex items-center justify-center space-x-1 px-3 py-2 bg-secondary/70 hover:bg-secondary text-white rounded-lg transition-all duration-300 text-sm">
+                                <i class="fa fa-cogs"></i>
+                                <span>准备挂钩</span>
+                            </button>
+                            <button class="robot-btn flex items-center justify-center space-x-1 px-3 py-2 bg-secondary/70 hover:bg-secondary text-white rounded-lg transition-all duration-300 text-sm">
+                                <i class="fa fa-link"></i>
+                                <span>附着导线</span>
+                            </button>
+                            <button class="robot-btn flex items-center justify-center space-x-1 px-3 py-2 bg-secondary/70 hover:bg-secondary text-white rounded-lg transition-all duration-300 text-sm">
+                                <i class="fa fa-unlink"></i>
+                                <span>脱离导线</span>
+                            </button>
+                            <button class="robot-btn flex items-center justify-center space-x-1 px-3 py-2 bg-secondary/70 hover:bg-secondary text-white rounded-lg transition-all duration-300 text-sm">
+                                <i class="fa fa-stop-circle"></i>
+                                <span>停止</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h2 class="text-lg font-semibold mb-3 flex items-center">
+                    <i class="fa fa-upload mr-2 text-accent"></i>
+                    航线管理
+                </h2>
+                <div class="space-y-2">
+                    <div class="glass-effect-light rounded-lg p-2">
+                        <h3 class="text-sm font-medium text-light-blue mb-2">航线文件</h3>
+                        <div class="space-y-2">
+                            <div class="relative">
+                                <input type="text" id="waypoint-file" class="w-full bg-dark-gray/50 border border-light-blue/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent" placeholder="选择KMZ文件..." readonly>
+                                <button id="browse-file-btn" class="absolute right-0 top-0 h-full w-10 flex items-center justify-center text-light-blue hover:text-accent hover:bg-secondary/20 z-10 cursor-pointer" onclick="document.getElementById('file-input').click();">
+                                    <i class="fa fa-folder-open"></i>
+                                </button>
+                            </div>
+                            <input type="file" id="file-input" accept=".kmz,application/vnd.google-earth.kmz" class="hidden" onchange="updateWaypointFileName(this);">
+                            <button id="load-waypoint-btn" class="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-secondary hover:bg-secondary/80 text-white rounded-lg transition-all duration-300 text-sm" onclick="loadWaypoint()">
+                                <i class="fa fa-download"></i>
+                                <span>加载航线</span>
+                            </button>
+                            <!-- 航线加载进度显示 -->
+                            <div id="waypoint-upload-progress" class="hidden">
+                                <div class="text-xs text-light-gray mb-1">上传进度</div>
+                                <div class="relative pt-1">
+                                    <div class="overflow-hidden h-2 mb-1 text-xs flex rounded bg-dark-gray/50">
+                                        <div id="upload-progress-bar" style="width: 0%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-secondary to-accent"></div>
+                                    </div>
+                                    <div class="text-xs text-right" id="upload-progress-text">0%</div>
+                                </div>
+                            </div>
+                            <!-- 航线加载结果 -->
+                            <div id="waypoint-upload-result" class="hidden text-xs p-2 rounded-lg">
+                                <div class="flex items-center">
+                                    <i id="result-icon" class="mr-2"></i>
+                                    <span id="result-message"></span>
+                                </div>
+                            </div>
+                            <!-- 航线执行控制按钮 -->
+                            <div id="waypoint-execution-controls" class="hidden space-y-2">
+                                <button id="verify-waypoint-btn" class="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-primary hover:bg-primary/80 text-white rounded-lg transition-all duration-300 text-sm">
+                                    <i class="fa fa-check-circle"></i>
+                                    <span>执行检验</span>
+                                </button>
+                                <button id="execute-waypoint-btn" class="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-success hover:bg-success/80 text-white rounded-lg transition-all duration-300 text-sm">
+                                    <i class="fa fa-rocket"></i>
+                                    <span>起飞执行</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-effect-light rounded-lg p-2">
+                        <h3 class="text-sm font-medium text-light-blue mb-2">预设任务</h3>
+                        <select id="mission-template" class="w-full bg-dark-gray/50 border border-light-blue/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+                            <option value="">选择预设任务...</option>
+                            <option value="hoisting">吊装任务</option>
+                            <option value="inspection">巡检任务</option>
+                            <option value="maintenance">维护任务</option>
+                            <option value="emergency">应急任务</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 中央视频显示区 -->
+        <section class="flex-1 lg:flex-[0_0_50%] flex flex-col space-y-2 min-w-[300px]">
+            <!-- 主视频显示 -->
+            <div class="glass-effect rounded-xl p-2 flex-1 flex flex-col min-h-[200px]">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-lg font-semibold flex items-center">
+                        <i class="fa fa-video-camera mr-2 text-accent"></i>
+                        视频监控
+                    </h2>
+                    <div class="flex space-x-1.5">
+                        <button class="video-source-btn px-3 py-1 bg-secondary/70 hover:bg-secondary text-white rounded-lg text-sm transition-all duration-300" data-source="drone">无人机</button>
+                        <button class="video-source-btn px-3 py-1 bg-dark-gray/50 hover:bg-secondary text-white rounded-lg text-sm transition-all duration-300" data-source="robot">机器人</button>
+                        <button class="video-source-btn px-3 py-1 bg-dark-gray/50 hover:bg-secondary text-white rounded-lg text-sm transition-all duration-300" data-source="global">全局</button>
+                    </div>
+                </div>
+                <div class="relative flex-1 bg-black rounded-lg overflow-hidden">
+                    <div id="main-video" class="w-full h-full flex items-center justify-center">
+                        <!-- 视频源将通过JavaScript动态切换 -->
+                        <div id="drone-video" class="w-full h-full">
+                            <img src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/e570922caa8a42c289346248c83300d2~tplv-a9rns2rl98-image.image?rcl=2025121114042414B19EA58AA79B4B5960&amp;rk3s=8e244e95&amp;rrcfp=f06b921b&amp;x-expires=1768025149&amp;x-signature=AiGKIImLakMaVrcOTGDnZVd%2FJVQ%3D" class="w-full h-full object-cover" alt="无人机视频">
+                        </div>
+                        <div id="robot-video" class="w-full h-full hidden">
+                            <div class="w-full h-full bg-black/50 flex items-center justify-center">
+                                <span class="text-light-gray">机器人摄像头未连接</span>
+                            </div>
+                        </div>
+                        <div id="global-video" class="w-full h-full hidden">
+                            <div class="w-full h-full bg-black/50 flex items-center justify-center">
+                                <span class="text-light-gray">全局视图未激活</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 视频控制覆盖层 -->
+                    <div class="absolute bottom-4 left-4 right-4 glass-effect-light rounded-lg p-2 flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <button class="text-white hover:text-accent transition-colors">
+                                <i class="fa fa-play"></i>
+                            </button>
+                            <button class="text-white hover:text-accent transition-colors">
+                                <i class="fa fa-pause"></i>
+                            </button>
+                            <button class="text-white hover:text-accent transition-colors">
+                                <i class="fa fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xs text-light-gray">00:05:23</span>
+                            <button class="text-white hover:text-accent transition-colors">
+                                <i class="fa fa-cog"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 视频状态覆盖层 -->
+                    <div class="absolute top-4 left-4 glass-effect-light rounded-lg px-3 py-1 text-xs">
+                        <span id="video-status" class="flex items-center">
+                            <span class="inline-block w-2 h-2 bg-success rounded-full mr-2 animate-pulse"></span>
+                            实时视频 (1080p)
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 执行过程显示 -->
+            <div class="glass-effect rounded-xl p-2 flex-1 flex flex-col min-h-[200px]">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-lg font-semibold flex items-center">
+                        <i class="fa fa-tasks mr-2 text-accent"></i>
+                        执行过程
+                    </h2>
+                </div>
+                <div class="relative flex-1 bg-dark-gray/30 rounded-lg overflow-hidden">
+                    <!-- 执行过程显示区域 -->
+                    <div id="execution-process" class="w-full h-full p-4 overflow-y-auto scrollbar-thin">
+                        <div class="text-white text-center py-8">
+                            <i class="fa fa-hourglass-half text-4xl text-accent mb-3"></i>
+                            <p class="text-lg">等待任务执行...</p>
+                        </div>
+                    </div>
+                    
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 右侧数据面板 -->
+        <aside class="flex-1 lg:flex-[0_0_25%] glass-effect rounded-xl p-3 flex flex-col space-y-3 min-w-[250px] max-w-[300px] overflow-y-auto scrollbar-thin">
+            <!-- 设备状态 -->
+            <div>
+                <h2 class="text-lg font-semibold mb-3 flex items-center">
+                    <i class="fa fa-tachometer mr-2 text-accent"></i>
+                    设备状态
+                </h2>
+                <div class="space-y-2">
+                    <!-- 无人机状态 -->
+                    <div class="glass-effect-light rounded-lg p-2">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <h3 class="text-sm font-medium text-light-blue">无人机状态</h3>
+                            <span id="drone-status-indicator" class="inline-block w-2 h-2 bg-success rounded-full"></span>
+                        </div>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-light-gray">模式:</span>
+                                <span id="drone-mode">手动</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-light-gray">高度:</span>
+                                <span id="drone-altitude">0.0 m</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-light-gray">速度:</span>
+                                <span id="drone-speed">0.0 m/s</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-light-gray">电池:</span>
+                                <div class="flex items-center">
+                                    <div class="w-16 h-1.5 bg-dark-gray/50 rounded-full mr-2">
+                                        <div id="drone-battery" class="h-full bg-success rounded-full" style="width: 80%"></div>
+                                    </div>
+                                    <span id="drone-battery-percent">80%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 机器人状态 -->
+                    <div class="glass-effect-light rounded-lg p-2">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-sm font-medium text-light-blue">机器人状态</h3>
+                            <span id="robot-status-indicator" class="inline-block w-2 h-2 bg-success rounded-full"></span>
+                        </div>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-light-gray">模式:</span>
+                                <span id="robot-mode">地面模式</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-light-gray">位置:</span>
+                                <span id="robot-position">N/A</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-light-gray">姿态:</span>
+                                <span id="robot-orientation">0.0°</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-light-gray">电池:</span>
+                                <div class="flex items-center">
+                                    <div class="w-16 h-1.5 bg-dark-gray/50 rounded-full mr-2">
+                                        <div id="robot-battery" class="h-full bg-success rounded-full" style="width: 90%"></div>
+                                    </div>
+                                    <span id="robot-battery-percent">90%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 挂钩状态 -->
+                    <div class="glass-effect-light rounded-lg p-2">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-sm font-medium text-light-blue">挂钩状态</h3>
+                            <span id="hook-status-indicator" class="inline-block w-2 h-2 bg-warning rounded-full"></span>
+                        </div>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-light-gray">状态:</span>
+                                <span id="hook-status">打开</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-light-gray">锁定:</span>
+                                <span id="hook-lock">未锁定</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-light-gray">负载:</span>
+                                <span id="hook-load">0.0 kg</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-light-gray">温度:</span>
+                                <span id="hook-temperature">25.4 °C</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 传感器数据 -->
+            <div>
+                <h2 class="text-lg font-semibold mb-3 flex items-center">
+                    <i class="fa fa-area-chart mr-2 text-accent"></i>
+                    传感器数据
+                </h2>
+                <div class="space-y-2">
+                    <!-- 高度图表 -->
+                    <div class="glass-effect-light rounded-lg p-2">
+                        <h3 class="text-sm font-medium text-light-blue mb-2">高度监测</h3>
+                        <div class="h-32">
+                            <canvas id="altitude-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- 姿态图表 -->
+                    <div class="glass-effect-light rounded-lg p-2">
+                        <h3 class="text-sm font-medium text-light-blue mb-2">姿态监测</h3>
+                        <div class="h-32">
+                            <canvas id="attitude-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- 风速图表 -->
+                    <div class="glass-effect-light rounded-lg p-2">
+                        <h3 class="text-sm font-medium text-light-blue mb-2">风速监测</h3>
+                        <div class="h-32">
+                            <canvas id="wind-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 系统日志 -->
+            <div class="mt-auto">
+                <h2 class="text-lg font-semibold mb-2 flex items-center">
+                    <i class="fa fa-list-alt mr-2 text-accent"></i>
+                    系统日志
+                </h2>
+                <div class="glass-effect-light rounded-lg p-2">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-sm font-medium text-light-blue">实时日志</h3>
+                        <button class="text-xs text-light-blue hover:text-accent">
+                            <i class="fa fa-download"></i> 导出
+                        </button>
+                    </div>
+                    <div id="log-container" class="h-32 overflow-y-auto scrollbar-thin text-xs space-y-1">
+                        <div class="text-light-gray">2023-07-21 15:30:45 - 系统初始化完成</div>
+                        <div class="text-light-gray">2023-07-21 15:30:46 - 无人机连接成功</div>
+                        <div class="text-light-gray">2023-07-21 15:30:47 - 机器人连接成功</div>
+                        <div class="text-light-gray">2023-07-21 15:30:48 - 传感器系统正常</div>
+                        <div class="text-light-gray">2023-07-21 15:30:49 - 通信链路建立</div>
+                        <div class="text-light-gray">2023-07-21 15:30:50 - 系统就绪，等待任务</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- 紧急停止确认模态框 -->
+    <div id="emergency-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="glass-effect rounded-xl p-6 max-w-md w-full mx-4 animate-fade-in">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-danger/20 text-danger mb-4">
+                    <i class="fa fa-exclamation-triangle text-3xl"></i>
+                </div>
+                <h2 class="text-xl font-bold text-danger">紧急停止确认</h2>
+                <p class="text-light-gray mt-2">您确定要执行紧急停止操作吗？</p>
+                <p class="text-light-gray">这将立即停止所有设备并中断当前任务！</p>
+            </div>
+            <div class="flex space-x-4">
+                <button id="cancel-emergency" class="flex-1 px-4 py-3 bg-dark-gray/50 hover:bg-dark-gray text-white rounded-lg transition-all duration-300">
+                    取消
+                </button>
+                <button id="confirm-emergency" class="flex-1 px-4 py-3 bg-danger hover:bg-danger/80 text-white rounded-lg transition-all duration-300">
+                    确认紧急停止
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        /**
+         * @brief ROS2通信相关变量
+         * @details 管理与ROS2系统的通信连接和话题订阅/发布
+         */
+        
+        /** @brief ROS连接对象 */
+        let ros = null;
+        
+        /** @brief 系统状态订阅者 */
+        let systemStateSub = null;
+        
+        /** @brief 无人机状态订阅者 */
+        let droneStateSub = null;
+        
+        /** @brief 机器人状态订阅者 */
+        let robotStateSub = null;
+        
+        /** @brief 挂钩状态订阅者 */
+        let hookStateSub = null;
+        
+        /** @brief 传感器数据订阅者 */
+        let sensorDataSub = null;
+        
+        /** @brief 任务命令发布者 */
+        let missionCmdPub = null;
+        
+        /** @brief 无人机命令发布者 */
+        let droneCmdPub = null;
+        
+        /** @brief 机器人命令发布者 */
+        let robotCmdPub = null;
+        
+        /** @brief 挂钩命令发布者 */
+        let hookCmdPub = null;
+        
+        /**
+         * @brief 初始化ROS2连接
+         * @details 创建与ROS2的WebSocket连接，并设置各种订阅者和发布者
+         */
+        function initROS() {
+            // 创建ROS连接
+        ros = new ROSLIB.Ros({
+            url: 'ws://localhost:9090'
+        });
+        
+        // 建立连接
+        ros.connect();
+        
+        // 连接事件处理
+        ros.on('connection', function() {
+            console.log('ROS连接已建立');
+            addLogEntry('ROS2连接成功', 'success');
+            updateSystemStatus('ROS连接正常', 'success');
+        });
+        
+        ros.on('error', function(error) {
+            console.error('ROS连接错误:', error);
+            // 尝试获取更详细的错误信息
+            const errorMsg = error.code ? `${error.code} - ${error.message || '未知错误'}` : error;
+            addLogEntry(`ROS2连接错误: ${errorMsg}`, 'danger');
+            updateSystemStatus('ROS连接错误', 'danger');
+        });
+        
+        ros.on('close', function() {
+            console.log('ROS连接已关闭');
+            addLogEntry('ROS2连接关闭', 'warning');
+            updateSystemStatus('ROS连接关闭', 'warning');
+        });
+            
+            // 订阅系统状态话题
+            systemStateSub = new ROSLIB.Topic({
+                ros: ros,
+                name: '/system_state',
+                messageType: 'communication/SystemState'
+            });
+            
+            systemStateSub.subscribe(function(msg) {
+                updateSystemStatus(msg.status, 'success');
+            });
+            
+            // 订阅无人机状态话题
+            droneStateSub = new ROSLIB.Topic({
+                ros: ros,
+                name: '/drone/system_state',
+                messageType: 'communication/msg/SystemState'
+            });
+            
+            droneStateSub.subscribe(function(msg) {
+                document.getElementById('drone-mode').textContent = msg.mode;
+                // 注意：实际代码中SystemState消息没有altitude和speed字段，这里使用固定值
+                document.getElementById('drone-altitude').textContent = '0.0 m';
+                document.getElementById('drone-speed').textContent = '0.0 m/s';
+                document.getElementById('drone-battery').style.width = `${msg.battery_percentage}%`;
+                document.getElementById('drone-battery-percent').textContent = `${msg.battery_percentage}%`;
+                
+                // 更新无人机状态指示灯
+                const indicator = document.getElementById('drone-status-indicator');
+                indicator.className = `inline-block w-2 h-2 bg-success rounded-full`;
+            });
+            
+            // 订阅机器人状态话题
+            robotStateSub = new ROSLIB.Topic({
+                ros: ros,
+                name: '/robot/system_state',
+                messageType: 'communication/msg/SystemState'
+            });
+            
+            robotStateSub.subscribe(function(msg) {
+                document.getElementById('robot-mode').textContent = msg.mode;
+                // 注意：实际代码中SystemState消息没有position和orientation字段，这里使用固定值
+                document.getElementById('robot-position').textContent = 'N/A';
+                document.getElementById('robot-orientation').textContent = '0.0°';
+                document.getElementById('robot-battery').style.width = `${msg.battery_percentage}%`;
+                document.getElementById('robot-battery-percent').textContent = `${msg.battery_percentage}%`;
+                
+                // 更新机器人状态指示灯
+                const indicator = document.getElementById('robot-status-indicator');
+                indicator.className = `inline-block w-2 h-2 bg-success rounded-full`;
+            });
+            
+            // 订阅挂钩状态话题
+            hookStateSub = new ROSLIB.Topic({
+                ros: ros,
+                name: '/hook/system_state',
+                messageType: 'communication/msg/SystemState'
+            });
+            // 发布任务命令话题
+            missionCmdPub = new ROSLIB.Topic({
+                ros: ros,
+                name: '/mission/cmd',
+                messageType: 'communication/msg/MissionCommand'
+            });
+            
+            // 发布无人机命令话题
+        droneCmdPub = new ROSLIB.Topic({
+            ros: ros,
+            name: '/frontend/drone/command',
+            messageType: 'communication/msg/DroneCommand'
+        });
+            
+            // 发布机器人命令话题
+            robotCmdPub = new ROSLIB.Topic({
+                ros: ros,
+                name: '/robot/cmd',
+                messageType: 'communication/msg/RobotCommand'
+            });
+            
+            // 发布挂钩命令话题
+            hookCmdPub = new ROSLIB.Topic({
+                ros: ros,
+                name: '/hook/cmd',
+                messageType: 'communication/msg/HookCommand'
+            });
+        }
+        
+        // 初始化时间显示
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('current-time').textContent = timeString;
+        }
+        
+        setInterval(updateTime, 1000);
+        updateTime();
+        
+        // 注意：紧急停止、文件浏览和航线加载功能已移至DOMContentLoaded事件内
+        // 这样可以确保页面完全加载后再执行这些操作，避免元素未找到的错误
+        
+        /**
+         * @brief 任务控制功能
+         * @details 实现任务的开始、暂停和中止控制
+         */
+        const startMissionBtn = document.getElementById('start-mission-btn');
+        const pauseMissionBtn = document.getElementById('pause-mission-btn');
+        const abortMissionBtn = document.getElementById('abort-mission-btn');
+        
+        // 开始任务按钮事件处理
+        startMissionBtn.addEventListener('click', () => {
+            const missionTemplate = document.getElementById('mission-template').value;
+            if (!missionTemplate) {
+                addLogEntry('请选择预设任务', 'warning');
+                return;
+            }
+            
+            addLogEntry(`开始执行任务: ${missionTemplate}`);
+            document.getElementById('current-mission').innerHTML = `<span class="bg-secondary/50 px-3 py-1 rounded-full">${missionTemplate}</span>`;
+            updateExecutionProcess(`开始执行任务: ${missionTemplate}`);
+            
+            // 发布开始任务命令到任务控制话题
+            const msg = new ROSLIB.Message({
+                command: 'start',
+                mission_type: missionTemplate,
+                timestamp: Date.now()
+            });
+            missionCmdPub.publish(msg);
+            
+            // 更新按钮状态
+            startMissionBtn.disabled = true;
+            startMissionBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            pauseMissionBtn.disabled = false;
+            pauseMissionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            abortMissionBtn.disabled = false;
+            abortMissionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            // 启用设备控制按钮
+            document.querySelectorAll('.drone-btn, .hook-btn, .robot-btn').forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            });
+        });
+        
+        // 暂停任务按钮事件处理
+        pauseMissionBtn.addEventListener('click', () => {
+            addLogEntry('任务已暂停');
+            updateExecutionProcess('任务已暂停');
+            const processContainer = document.getElementById('execution-process');
+            const pauseEntry = document.createElement('div');
+            pauseEntry.className = 'mb-2 p-2 bg-warning/50 rounded-lg border-l-4 border-warning text-white text-center';
+            pauseEntry.innerHTML = '<i class="fa fa-pause-circle mr-2"></i>任务暂停中...';
+            processContainer.appendChild(pauseEntry);
+            processContainer.scrollTop = processContainer.scrollHeight;
+            
+            // 发布暂停任务命令到任务控制话题
+            const msg = new ROSLIB.Message({
+                command: 'pause',
+                timestamp: Date.now()
+            });
+            missionCmdPub.publish(msg);
+            
+            // 更新按钮状态
+            pauseMissionBtn.disabled = true;
+            pauseMissionBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            startMissionBtn.disabled = false;
+            startMissionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            startMissionBtn.innerHTML = '<i class="fa fa-play"></i><span>继续任务</span>';
+        });
+        
+        // 中止任务按钮事件处理
+        abortMissionBtn.addEventListener('click', () => {
+            addLogEntry('任务已中止', 'danger');
+            updateExecutionProcess('任务已中止');
+            const processContainer = document.getElementById('execution-process');
+            const abortEntry = document.createElement('div');
+            abortEntry.className = 'mb-2 p-2 bg-danger/50 rounded-lg border-l-4 border-danger text-white text-center';
+            abortEntry.innerHTML = '<i class="fa fa-times-circle mr-2"></i>任务已中止';
+            processContainer.appendChild(abortEntry);
+            processContainer.scrollTop = processContainer.scrollHeight;
+            
+            // 发布中止任务命令到任务控制话题
+            const msg = new ROSLIB.Message({
+                command: 'abort',
+                timestamp: Date.now()
+            });
+            missionCmdPub.publish(msg);
+            
+            // 重置任务状态
+            resetMissionState();
+        });
+        
+        /**
+         * @brief 视频源切换功能
+         * @details 实现不同视频源（无人机、机器人、全局）的切换显示
+         */
+        const videoSourceBtns = document.querySelectorAll('.video-source-btn');
+        const videoContainers = {
+            'drone': document.getElementById('drone-video'),
+            'robot': document.getElementById('robot-video'),
+            'global': document.getElementById('global-video')
+        };
+        
+        videoSourceBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const source = btn.dataset.source;
+                
+                // 更新按钮选中样式
+                videoSourceBtns.forEach(b => {
+                    b.classList.remove('bg-secondary/70');
+                    b.classList.add('bg-dark-gray/50');
+                });
+                btn.classList.remove('bg-dark-gray/50');
+                btn.classList.add('bg-secondary/70');
+                
+                // 显示选中的视频源，隐藏其他视频源
+                Object.keys(videoContainers).forEach(key => {
+                    if (key === source) {
+                        videoContainers[key].classList.remove('hidden');
+                    } else {
+                        videoContainers[key].classList.add('hidden');
+                    }
+                });
+            });
+        });
+        
+        // 执行过程显示更新函数
+        function updateExecutionProcess(message) {
+            const processContainer = document.getElementById('execution-process');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'mb-2 p-2 bg-dark-gray/50 rounded-lg border-l-4 border-accent';
+            logEntry.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <span class="text-sm text-gray-400">${timestamp}</span>
+                </div>
+                <div class="text-white">${message}</div>
+            `;
+            
+            // 添加新日志并滚动到底部
+            processContainer.appendChild(logEntry);
+            processContainer.scrollTop = processContainer.scrollHeight;
+            
+            // 限制日志数量，最多显示50条
+            const logEntries = processContainer.querySelectorAll('div');
+            if (logEntries.length > 50) {
+                logEntries[0].remove();
+            }
+        }
+        
+        // 示例：任务开始时调用
+        // updateExecutionProcess('任务已开始，正在初始化设备...');
+        
+        // 示例：任务执行中调用
+        // updateExecutionProcess('无人机已起飞，正在前往目标位置...');
+
+        
+        // 设备控制按钮 - 默认启用，用于测试
+        document.querySelectorAll('.drone-btn, .hook-btn, .robot-btn').forEach(btn => {
+            // 确保按钮始终启用，不受任务状态影响
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            btn.addEventListener('click', () => {
+                const action = btn.textContent.trim();
+                const device = btn.classList.contains('drone-btn') ? '无人机' : 
+                              btn.classList.contains('hook-btn') ? '挂钩' : '机器人';
+                
+                addLogEntry(`${device}执行动作: ${action}`);
+                
+                // 通过ROS2发布控制命令
+                if (device === '无人机') {
+                    // 根据动作设置正确的命令类型和参数
+                    let commandType = 0;
+                    let commandParams = {};
+                    
+                    switch(action) {
+                        case '起飞':
+                            commandType = 0; // COMMAND_TYPE_TAKEOFF
+                            commandParams.takeoff_height = 1.0; // 默认起飞高度1米
+                            break;
+                        case '降落':
+                            commandType = 1; // COMMAND_TYPE_LAND
+                            commandParams.landing_speed = 0.5; // 默认降落速度0.5米/秒
+                            break;
+                        case '悬停':
+                            commandType = 3; // COMMAND_TYPE_HOVER
+                            break;
+                        case '返航':
+                            commandType = 4; // COMMAND_TYPE_RETURN_HOME
+                            break;
+                        default:
+                            console.log(`未知的无人机动作: ${action}`);
+                            return;
+                    }
+                    
+                    const msg = new ROSLIB.Message({
+                        header: {
+                            stamp: ROSLIB.Time.now(),
+                            frame_id: 'ground_station'
+                        },
+                        command_type: commandType,
+                        ...commandParams
+                    });
+                    
+                    console.log(`[调试] 发送无人机控制命令: ${action}`, msg);
+                    addLogEntry(`[命令发送] 无人机: ${action}`, 'info');
+                    droneCmdPub.publish(msg);
+                } else if (device === '挂钩') {
+                    const msg = new ROSLIB.Message({
+                        command: action,
+                        timestamp: Date.now()
+                    });
+                    console.log(`[调试] 发送挂钩控制命令: ${action}`, msg);
+                    addLogEntry(`[命令发送] 挂钩: ${action}`, 'info');
+                    hookCmdPub.publish(msg);
+                } else if (device === '机器人') {
+                    const msg = new ROSLIB.Message({
+                        command: action,
+                        timestamp: Date.now()
+                    });
+                    console.log(`[调试] 发送机器人控制命令: ${action}`, msg);
+                    addLogEntry(`[命令发送] 机器人: ${action}`, 'info');
+                    robotCmdPub.publish(msg);
+                }
+            });
+        });
+        
+        // 重置任务状态
+        function resetMissionState() {
+            document.getElementById('current-mission').innerHTML = '<span class="bg-dark-gray/50 px-3 py-1 rounded-full">等待任务分配</span>';
+            updateMissionProgress(0, '未开始');
+            // 重置执行过程显示
+            const processContainer = document.getElementById('execution-process');
+            processContainer.innerHTML = `
+                <div class="text-white text-center py-8">
+                    <i class="fa fa-hourglass-half text-4xl text-accent mb-3"></i>
+                    <p class="text-lg">等待任务执行...</p>
+                </div>
+            `;
+            
+            startMissionBtn.disabled = false;
+            startMissionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            startMissionBtn.innerHTML = '<i class="fa fa-play"></i><span>开始任务</span>';
+            
+            pauseMissionBtn.disabled = true;
+            pauseMissionBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            abortMissionBtn.disabled = true;
+            abortMissionBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            // 设备控制按钮保持启用状态，以便随时进行控制
+            // document.querySelectorAll('.drone-btn, .hook-btn, .robot-btn').forEach(btn => {
+            //     btn.disabled = true;
+            //     btn.classList.add('opacity-50', 'cursor-not-allowed');
+            // });
+            
+            // 重置设备状态
+            document.getElementById('drone-mode').textContent = '手动';
+            document.getElementById('robot-mode').textContent = '地面模式';
+            document.getElementById('robot-position').textContent = 'N/A';
+            document.getElementById('hook-status').textContent = '打开';
+            document.getElementById('hook-lock').textContent = '未锁定';
+            document.getElementById('hook-load').textContent = '0.0 kg';
+        }
+        
+        // 更新任务进度
+        function updateMissionProgress(percentage, phase) {
+            document.getElementById('mission-progress').style.width = `${percentage}%`;
+            document.getElementById('mission-phase').textContent = phase;
+        }
+        
+        // 更新系统状态
+        function updateSystemStatus(status, colorClass) {
+            const statusElement = document.getElementById('system-status');
+            statusElement.textContent = status;
+            statusElement.className = `px-3 py-1 rounded-full text-${colorClass} text-sm font-medium bg-${colorClass}/20`;
+        }
+        
+        // 添加日志条目
+        function addLogEntry(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = type === 'danger' ? 'text-danger' : 
+                                 type === 'warning' ? 'text-warning' : 
+                                 type === 'success' ? 'text-success' : 'text-light-gray';
+            logEntry.textContent = `${timeString} - ${message}`;
+            
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // 限制日志条目数量
+            if (logContainer.children.length > 50) {
+                logContainer.removeChild(logContainer.firstChild);
+            }
+        }
+        
+        // 模拟任务进度
+        function simulateMissionProgress(missionType) {
+            let progress = 0;
+            const phases = [
+                '初始化任务',
+                '系统自检',
+                '机器人准备',
+                '无人机起飞',
+                '接近目标',
+                '挂钩闭合',
+                '挂钩锁定',
+                '机器人上线',
+                '挂钩释放',
+                '任务完成'
+            ];
+            
+            const interval = setInterval(() => {
+                progress += 5;
+                const phaseIndex = Math.min(Math.floor(progress / 10), phases.length - 1);
+                
+                updateMissionProgress(progress, phases[phaseIndex]);
+                addLogEntry(`任务进度: ${phases[phaseIndex]} (${progress}%)`);
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    addLogEntry('任务执行完成', 'success');
+                    updateSystemStatus('任务完成', 'success');
+                    
+                    // 重置按钮状态
+                    setTimeout(() => {
+                        resetMissionState();
+                        updateSystemStatus('正常运行', 'success');
+                    }, 3000);
+                }
+            }, 2000);
+        }
+        
+        // 初始化图表
+        function initCharts() {
+            // 高度图表
+            const altitudeCtx = document.getElementById('altitude-chart').getContext('2d');
+            const altitudeChart = new Chart(altitudeCtx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 20}, (_, i) => i),
+                    datasets: [{
+                        label: '高度 (m)',
+                        data: Array.from({length: 20}, () => Math.random() * 2 + 0),
+                        borderColor: '#4299e1',
+                        backgroundColor: 'rgba(66, 153, 225, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            display: false,
+                            min: 0,
+                            max: 10
+                        }
+                    },
+                    animation: {
+                        duration: 0
+                    }
+                }
+            });
+            
+            // 姿态图表
+            const attitudeCtx = document.getElementById('attitude-chart').getContext('2d');
+            const attitudeChart = new Chart(attitudeCtx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 20}, (_, i) => i),
+                    datasets: [{
+                        label: '横滚 (°)',
+                        data: Array.from({length: 20}, () => Math.random() * 10 - 5),
+                        borderColor: '#00bcd4',
+                        backgroundColor: 'rgba(0, 188, 212, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            display: false,
+                            min: -15,
+                            max: 15
+                        }
+                    },
+                    animation: {
+                        duration: 0
+                    }
+                }
+            });
+            
+            // 风速图表
+            const windCtx = document.getElementById('wind-chart').getContext('2d');
+            const windChart = new Chart(windCtx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 20}, (_, i) => i),
+                    datasets: [{
+                        label: '风速 (m/s)',
+                        data: Array.from({length: 20}, () => Math.random() * 3 + 1),
+                        borderColor: '#4caf50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            display: false,
+                            min: 0,
+                            max: 10
+                        }
+                    },
+                    animation: {
+                        duration: 0
+                    }
+                }
+            });
+            
+            // 更新图表数据
+            setInterval(() => {
+                // 更新高度图表
+                altitudeChart.data.datasets[0].data.shift();
+                altitudeChart.data.datasets[0].data.push(Math.random() * 2 + 0);
+                altitudeChart.update();
+                
+                // 更新姿态图表
+                attitudeChart.data.datasets[0].data.shift();
+                attitudeChart.data.datasets[0].data.push(Math.random() * 10 - 5);
+                attitudeChart.update();
+                
+                // 更新风速图表
+                windChart.data.datasets[0].data.shift();
+                windChart.data.datasets[0].data.push(Math.random() * 3 + 1);
+                windChart.update();
+                
+                // 更新传感器数据显示
+                document.getElementById('drone-altitude').textContent = `${(Math.random() * 5 + 0).toFixed(1)} m`;
+                document.getElementById('drone-speed').textContent = `${(Math.random() * 2 + 0).toFixed(1)} m/s`;
+                document.getElementById('robot-orientation').textContent = `${(Math.random() * 360).toFixed(1)}°`;
+                document.getElementById('hook-temperature').textContent = `${(Math.random() * 10 + 20).toFixed(1)} °C`;
+            }, 1000);
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('DOMContentLoaded事件被触发');
+            initCharts();
+            initROS();
+            addLogEntry('地面站界面加载完成');
+            
+            // 页面加载时启用所有控制按钮，不受ROS连接状态限制
+            // 启用任务控制按钮（使用全局变量）
+            if (startMissionBtn) {
+                startMissionBtn.disabled = false;
+                startMissionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            if (pauseMissionBtn) {
+                pauseMissionBtn.disabled = false;
+                pauseMissionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            if (abortMissionBtn) {
+                abortMissionBtn.disabled = false;
+                abortMissionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            
+            // 启用设备控制按钮（覆盖任何之前的禁用状态）
+            function enableControlButtons() {
+                document.querySelectorAll('.drone-btn, .hook-btn, .robot-btn').forEach(btn => {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                });
+            }
+            
+            // 初始启用按钮
+            enableControlButtons();
+            
+            // 确保在DOM加载完成后延迟执行一次，防止其他代码覆盖按钮状态
+            setTimeout(enableControlButtons, 100);
+            
+            // 启用航线执行按钮（将在航线加载时设置）
+            
+            // DOM元素获取和事件监听器绑定
+            console.log('开始获取DOM元素...');
+            
+            // 紧急停止功能
+            const emergencyBtn = document.getElementById('emergency-btn');
+            const emergencyModal = document.getElementById('emergency-modal');
+            const cancelEmergency = document.getElementById('cancel-emergency');
+            const confirmEmergency = document.getElementById('confirm-emergency');
+            
+            // 检查DOM元素是否存在
+            if (!emergencyBtn) {
+                console.error('未找到紧急停止按钮元素 (id="emergency-btn")');
+            } else {
+                console.log('找到紧急停止按钮元素:', emergencyBtn);
+            }
+            
+            if (!emergencyModal) {
+                console.error('未找到紧急停止模态框元素 (id="emergency-modal")');
+            } else {
+                console.log('找到紧急停止模态框元素:', emergencyModal);
+            }
+            
+            // 点击紧急停止按钮显示确认模态框
+            if (emergencyBtn) {
+                emergencyBtn.addEventListener('click', () => {
+                    console.log('紧急停止按钮被点击');
+                    emergencyModal.classList.remove('hidden');
+                });
+            }
+            
+            // 取消紧急停止
+            if (cancelEmergency) {
+                cancelEmergency.addEventListener('click', () => {
+                    console.log('取消紧急停止按钮被点击');
+                    emergencyModal.classList.add('hidden');
+                });
+            } else {
+                console.error('未找到取消紧急停止按钮元素 (id="cancel-emergency")');
+            }
+            
+            // 确认执行紧急停止
+            if (confirmEmergency) {
+                confirmEmergency.addEventListener('click', () => {
+                    console.log('点击了确认紧急停止按钮');
+                    console.log('missionCmdPub是否存在:', !!missionCmdPub);
+                    console.log('ROS连接状态:', ros ? ros.isConnected : '未连接');
+                    
+                    // 检查ROS连接状态
+                    if (!ros || !ros.isConnected) {
+                        console.error('ROS未连接，无法执行紧急停止');
+                        addLogEntry('系统未连接，紧急停止失败', 'danger');
+                        emergencyModal.classList.add('hidden');
+                        return;
+                    }
+                    
+                    if (missionCmdPub) {
+                        console.log('missionCmdPub配置:', {
+                            name: missionCmdPub.name,
+                            messageType: missionCmdPub.messageType
+                        });
+                        // 发布紧急停止命令到任务控制话题
+                        const msg = new ROSLIB.Message({
+                            header: {
+                                stamp: {
+                                    secs: Math.floor(Date.now() / 1000),
+                                    nsecs: (Date.now() % 1000) * 1000000
+                                }
+                            },
+                            emergency_stop: true
+                        });
+                        console.log('要发布的消息:', msg);
+                        missionCmdPub.publish(msg);
+                        console.log('消息已发布');
+                        
+                        addLogEntry('紧急停止已执行', 'danger');
+                        updateSystemStatus('紧急停止', 'danger');
+                    } else {
+                        console.error('missionCmdPub未初始化');
+                        addLogEntry('发布者未初始化，紧急停止失败', 'danger');
+                    }
+                    
+                    // 禁用所有其他控制按钮
+                    document.querySelectorAll('button').forEach(btn => {
+                        if (btn.id !== 'emergency-btn' && btn.id !== 'cancel-emergency' && btn.id !== 'confirm-emergency') {
+                            btn.disabled = true;
+                            btn.classList.add('opacity-50', 'cursor-not-allowed');
+                        }
+                    });
+                    
+                    emergencyModal.classList.add('hidden');
+                });
+            } else {
+                console.error('未找到确认紧急停止按钮元素 (id="confirm-emergency")');
+            }
+            
+            // 文件浏览功能
+            console.log('获取文件浏览相关DOM元素...');
+            const browseFileBtn = document.getElementById('browse-file-btn');
+            const fileInput = document.getElementById('file-input');
+            const waypointFile = document.getElementById('waypoint-file');
+            
+            console.log('文件浏览DOM元素获取结果:', {
+                browseFileBtn: browseFileBtn,
+                fileInput: fileInput,
+                waypointFile: waypointFile
+            });
+            
+            // 检查DOM元素是否存在
+            if (!browseFileBtn) {
+                console.error('未找到id为browse-file-btn的元素');
+            }
+            if (!fileInput) {
+                console.error('未找到id为file-input的元素');
+            }
+            if (!waypointFile) {
+                console.error('未找到id为waypoint-file的元素');
+            }
+            
+            // 点击浏览按钮触发文件选择对话框
+            if (browseFileBtn && fileInput) {
+                console.log('绑定文件浏览按钮点击事件监听器');
+                browseFileBtn.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    console.log('浏览文件按钮被点击，触发文件选择对话框');
+                    console.log('fileInput元素:', fileInput);
+                    console.log('fileInput.click函数:', typeof fileInput.click);
+                    try {
+                        fileInput.click();
+                        console.log('fileInput.click()执行成功');
+                    } catch (error) {
+                        console.error('执行fileInput.click()时发生错误:', error);
+                    }
+                });
+            }
+            
+            // 定义全局的updateWaypointFileName函数
+            window.updateWaypointFileName = function(input) {
+                console.log('updateWaypointFileName函数被调用，input:', input);
+                console.log('input.files:', input.files);
+                const waypointFile = document.getElementById('waypoint-file');
+                console.log('waypointFile元素:', waypointFile);
+                
+                if (input.files && input.files.length > 0) {
+                    console.log('选择的文件:', input.files[0]);
+                    if (waypointFile) {
+                        waypointFile.value = input.files[0].name;
+                        console.log('更新waypointFile.value为:', waypointFile.value);
+                        // 更新全局fileInput引用
+                        window.selectedFile = input.files[0];
+                    } else {
+                        console.error('未找到id为waypoint-file的元素');
+                    }
+                }
+            };
+            
+            // 文件选择后更新显示
+            if (fileInput && waypointFile) {
+                console.log('绑定文件输入框change事件监听器');
+                fileInput.addEventListener('change', (e) => {
+                    console.log('文件选择发生变化，e.target:', e.target);
+                    window.updateWaypointFileName(e.target);
+                });
+            }
+            
+            // 航线加载功能
+            console.log('获取航线加载相关DOM元素...');
+            const loadWaypointBtn = document.getElementById('load-waypoint-btn');
+            const waypointUploadProgress = document.getElementById('waypoint-upload-progress');
+            const uploadProgressBar = document.getElementById('upload-progress-bar');
+            const uploadProgressText = document.getElementById('upload-progress-text');
+            const waypointUploadResult = document.getElementById('waypoint-upload-result');
+            const resultIcon = document.getElementById('result-icon');
+            const resultMessage = document.getElementById('result-message');
+            const waypointExecutionControls = document.getElementById('waypoint-execution-controls');
+            const verifyWaypointBtn = document.getElementById('verify-waypoint-btn');
+            const executeWaypointBtn = document.getElementById('execute-waypoint-btn');
+            
+            console.log('航线加载DOM元素获取结果:', {
+                loadWaypointBtn: loadWaypointBtn,
+                waypointUploadProgress: waypointUploadProgress,
+                uploadProgressBar: uploadProgressBar,
+                uploadProgressText: uploadProgressText,
+                waypointUploadResult: waypointUploadResult,
+                resultIcon: resultIcon,
+                resultMessage: resultMessage,
+                waypointExecutionControls: waypointExecutionControls,
+                verifyWaypointBtn: verifyWaypointBtn,
+                executeWaypointBtn: executeWaypointBtn,
+                waypointFile: waypointFile  // 检查waypointFile变量是否可用
+            });
+            
+            // 服务客户端：上传航线
+            const uploadWaypointSrv = new ROSLIB.Service({
+                ros: ros,
+                name: '/ground_station/upload_waypoint_v3',
+                serviceType: 'std_srvs/Trigger'
+            });
+            
+            // 服务客户端：开始航线任务
+            const startWaypointSrv = new ROSLIB.Service({
+                ros: ros,
+                name: '/ground_station/start_waypoint_v3',
+                serviceType: 'std_srvs/Trigger'
+            });
+            
+            // 服务客户端：执行检验
+            const verifyWaypointSrv = new ROSLIB.Service({
+                ros: ros,
+                name: '/ground_station/verify_waypoint_v3',
+                serviceType: 'std_srvs/Trigger'
+            });
+            
+            // 定义全局的loadWaypoint函数
+            window.loadWaypoint = function() {
+                console.log('********************************************');
+                console.log('************* 加载航线按钮被点击 *************');
+                console.log('********************************************');
+                console.log('当前时间:', new Date().toISOString());
+                
+                // 重新获取DOM元素和服务，避免作用域问题
+                const loadWaypointBtn = document.getElementById('load-waypoint-btn');
+                const waypointFile = document.getElementById('waypoint-file');
+                const fileInput = document.getElementById('file-input');
+                const waypointUploadProgress = document.getElementById('waypoint-upload-progress');
+                const uploadProgressBar = document.getElementById('upload-progress-bar');
+                const uploadProgressText = document.getElementById('upload-progress-text');
+                const waypointUploadResult = document.getElementById('waypoint-upload-result');
+                const resultIcon = document.getElementById('result-icon');
+                const resultMessage = document.getElementById('result-message');
+                const waypointExecutionControls = document.getElementById('waypoint-execution-controls');
+                
+                // 检查ros和服务客户端是否可用
+                if (typeof ros === 'undefined' || !ros) {
+                    console.error('ROS对象未定义或不可用');
+                    addLogEntry('系统连接异常，请检查ROS连接', 'danger');
+                    return;
+                }
+                
+                // 重新获取服务客户端（如果需要）
+                let uploadWaypointSrv;
+                try {
+                    uploadWaypointSrv = new ROSLIB.Service({
+                        ros: ros,
+                        name: '/ground_station/upload_waypoint_v3',
+                        serviceType: 'std_srvs/Trigger'
+                    });
+                    console.log('重新创建了uploadWaypointSrv服务客户端');
+                } catch (err) {
+                    console.error('创建服务客户端失败:', err);
+                    addLogEntry('服务初始化失败: ' + err, 'danger');
+                    return;
+                }
+                
+                console.log('loadWaypointBtn元素:', loadWaypointBtn);
+                console.log('waypointFile元素:', waypointFile);
+                console.log('waypointFile.value:', waypointFile ? waypointFile.value : 'undefined');
+                console.log('fileInput.files:', fileInput ? fileInput.files : 'undefined');
+                console.log('window.selectedFile:', window.selectedFile);
+                
+                // 检查是否有实际选择的文件
+                if ((fileInput && fileInput.files && fileInput.files.length > 0) || window.selectedFile) {
+                    console.log('已选择航线文件，开始处理...');
+                    
+                    // 检查所有必要的DOM元素是否可用
+                    if (!waypointUploadProgress || !waypointUploadResult || !waypointExecutionControls || !uploadProgressBar || !uploadProgressText) {
+                        console.error('缺少必要的DOM元素');
+                        addLogEntry('界面元素加载异常，请刷新页面重试', 'danger');
+                        return;
+                    }
+                    
+                    // 显示加载进度
+                    console.log('显示加载进度条...');
+                    waypointUploadProgress.classList.remove('hidden');
+                    waypointUploadResult.classList.add('hidden');
+                    waypointExecutionControls.classList.add('hidden');
+                    
+                    // 重置进度条
+                    console.log('重置进度条...');
+                    uploadProgressBar.style.width = '0%';
+                    uploadProgressText.textContent = '0%';
+                    
+                    addLogEntry(`正在上传航线文件: ${waypointFile ? waypointFile.value : '未知文件名'}`);
+                    console.log('显示了加载进度和日志');
+                    
+                    // 模拟上传进度
+                    console.log('开始模拟上传进度...');
+                    let progress = 0;
+                    const progressInterval = setInterval(() => {
+                        progress += 5;
+                        uploadProgressBar.style.width = `${progress}%`;
+                        uploadProgressText.textContent = `${progress}%`;
+                        console.log(`进度更新: ${progress}%`);
+                        
+                        if (progress >= 95) {
+                            console.log('进度达到95%，准备调用实际服务...');
+                            clearInterval(progressInterval);
+                            
+                            // 调用上传航线服务
+                            console.log('准备调用上传航线服务');
+                            console.log('创建服务请求...');
+                            const request = new ROSLIB.ServiceRequest();
+                            console.log('服务请求对象:', request);
+                            
+                            console.log('开始调用uploadWaypointSrv.callService...');
+                            try {
+                                uploadWaypointSrv.callService(request, 
+                                    (result) => {
+                                        console.log('上传航线服务调用成功，结果:', result);
+                                        
+                                        // 完成进度
+                                        uploadProgressBar.style.width = '100%';
+                                        uploadProgressText.textContent = '100%';
+                                        
+                                        // 确保所有显示元素都可用
+                                        const resultIcon = document.getElementById('result-icon');
+                                        const resultMessage = document.getElementById('result-message');
+                                        
+                                        // 显示上传结果
+                                        waypointUploadResult.classList.remove('hidden');
+                                    
+                                        if (result.success) {
+                                            // 上传成功
+                                            console.log('航线加载成功');
+                                            if (resultIcon) resultIcon.className = 'fa fa-check text-success mr-2';
+                                            if (resultMessage) resultMessage.textContent = '航线加载成功';
+                                            if (resultMessage) resultMessage.className = 'text-success';
+                                            waypointUploadResult.className = 'text-xs p-2 rounded-lg bg-success/20';
+                                            
+                                            addLogEntry('航线文件上传成功', 'success');
+                                            addLogEntry('航线任务已准备就绪', 'success');
+                                            updateMissionProgress(25, '航线已加载');
+                                            
+                                            // 显示执行控制按钮
+                                            waypointExecutionControls.classList.remove('hidden');
+                                        } else {
+                                            // 上传失败
+                                            console.log('航线加载失败:', result.message);
+                                            if (resultIcon) resultIcon.className = 'fa fa-times text-danger mr-2';
+                                            if (resultMessage) resultMessage.textContent = '航线加载失败: ' + result.message;
+                                            if (resultMessage) resultMessage.className = 'text-danger';
+                                            waypointUploadResult.className = 'text-xs p-2 rounded-lg bg-danger/20';
+                                            
+                                            addLogEntry('航线文件上传失败: ' + result.message, 'danger');
+                                        }
+                                    }, 
+                                    (error) => {
+                                        console.error('上传航线服务调用错误:', error);
+                                        // 上传错误
+                                        uploadProgressBar.style.width = '100%';
+                                        uploadProgressText.textContent = '100%';
+                                        
+                                        // 确保所有显示元素都可用
+                                        const resultIcon = document.getElementById('result-icon');
+                                        const resultMessage = document.getElementById('result-message');
+                                        
+                                        waypointUploadResult.classList.remove('hidden');
+                                        if (resultIcon) resultIcon.className = 'fa fa-exclamation-triangle text-warning mr-2';
+                                        if (resultMessage) resultMessage.textContent = '航线加载错误: ' + error;
+                                        if (resultMessage) resultMessage.className = 'text-warning';
+                                        waypointUploadResult.className = 'text-xs p-2 rounded-lg bg-warning/20';
+                                        
+                                        addLogEntry('航线文件上传错误: ' + error, 'warning');
+                                    }
+                                );
+                            } catch (err) {
+                                console.error('调用服务时发生异常:', err);
+                                // 异常处理
+                                uploadProgressBar.style.width = '100%';
+                                uploadProgressText.textContent = '100%';
+                                
+                                // 确保所有显示元素都可用
+                                const resultIcon = document.getElementById('result-icon');
+                                const resultMessage = document.getElementById('result-message');
+                                
+                                waypointUploadResult.classList.remove('hidden');
+                                if (resultIcon) resultIcon.className = 'fa fa-exclamation-triangle text-danger mr-2';
+                                if (resultMessage) resultMessage.textContent = '调用服务异常: ' + err;
+                                if (resultMessage) resultMessage.className = 'text-danger';
+                                waypointUploadResult.className = 'text-xs p-2 rounded-lg bg-danger/20';
+                                
+                                addLogEntry('调用航线服务异常: ' + err, 'danger');
+                            }
+                        }
+                    }, 200);
+                } else {
+                    console.log('未选择航线文件，显示错误提示...');
+                    alert('请先选择航线文件(.kmz格式)');
+                    console.log('显示了未选择文件的错误提示');
+                    addLogEntry('未选择航线文件，操作已取消', 'warning');
+                }
+            };
+            
+            // 航线加载按钮点击事件
+            console.log('正在绑定航线加载按钮事件监听器...');
+            console.log('loadWaypointBtn元素:', loadWaypointBtn);
+            console.log('uploadWaypointSrv服务:', uploadWaypointSrv);
+            
+            loadWaypointBtn.addEventListener('click', window.loadWaypoint);
+            
+            // 执行检验按钮点击事件
+            verifyWaypointBtn.addEventListener('click', () => {
+                console.log('执行检验按钮被点击');
+                
+                verifyWaypointSrv.callService(new ROSLIB.ServiceRequest(), 
+                    (result) => {
+                        if (result.success) {
+                            addLogEntry('航线检验通过，可以执行', 'success');
+                        } else {
+                            addLogEntry('航线检验失败: ' + result.message, 'danger');
+                        }
+                    }, 
+                    (error) => {
+                        addLogEntry('航线检验错误: ' + error, 'warning');
+                    }
+                );
+            });
+            
+            // 启用执行航线按钮并绑定点击事件
+            executeWaypointBtn.disabled = false;
+            executeWaypointBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            executeWaypointBtn.addEventListener('click', () => {
+                console.log('开始执行航线按钮被点击');
+                
+                startWaypointSrv.callService(new ROSLIB.ServiceRequest(), 
+                    (result) => {
+                        if (result.success) {
+                            addLogEntry('航线任务已开始执行', 'success');
+                            updateMissionProgress(50, '航线执行中');
+                            executeWaypointBtn.disabled = true;
+                            executeWaypointBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        } else {
+                            addLogEntry('航线任务启动失败: ' + result.message, 'danger');
+                        }
+                    }, 
+                    (error) => {
+                        addLogEntry('航线任务启动错误: ' + error, 'warning');
+                    }
+                );
+            });
+        });
+    </script>
+</body>
+</html>

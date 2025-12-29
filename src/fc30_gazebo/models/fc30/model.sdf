@@ -1,0 +1,392 @@
+<?xml version='1.0'?>
+<sdf version='1.8'>
+  <model name='fc30'>
+    <!-- Frame links -->
+    <link name='base_link'>
+      <pose>0 0 0.1 0 0 0</pose>
+      <inertial>
+        <mass>2.5</mass>
+        <inertia>
+          <ixx>0.05</ixx>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>0.05</iyy>
+          <iyz>0.0</iyz>
+          <izz>0.08</izz>
+        </inertia>
+      </inertial>
+      <collision name='base_collision'>
+        <geometry>
+          <box>
+            <size>0.3 0.3 0.1</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='base_visual'>
+        <geometry>
+          <box>
+            <size>0.3 0.3 0.1</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Blue</name>
+          </script>
+        </material>
+      </visual>
+      
+      <!-- Camera -->
+      <sensor name='camera' type='camera'>
+        <pose>0 0 0.05 0 0 0</pose>
+        <camera>
+          <horizontal_fov>1.047</horizontal_fov>
+          <image>
+            <width>640</width>
+            <height>480</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.1</near>
+            <far>100</far>
+          </clip>
+        </camera>
+        <plugin name='camera_controller' filename='libgazebo_ros_camera.so'>
+          <ros>{
+            'remapping': {
+              'image_raw': '/fc30/camera/image_raw',
+              'camera_info': '/fc30/camera/camera_info'
+            }
+          }</ros>
+          <camera_name>fc30_camera</camera_name>
+          <frame_name>base_link</frame_name>
+        </plugin>
+      </sensor>
+      
+      <!-- IMU -->
+      <sensor name='imu' type='imu'>
+        <pose>0 0 0 0 0 0</pose>
+        <imu>
+          <angular_velocity>
+            <x><noise type='gaussian'><mean>0.0</mean><stddev>0.001</stddev></noise></x>
+            <y><noise type='gaussian'><mean>0.0</mean><stddev>0.001</stddev></noise></y>
+            <z><noise type='gaussian'><mean>0.0</mean><stddev>0.001</stddev></noise></z>
+          </angular_velocity>
+          <linear_acceleration>
+            <x><noise type='gaussian'><mean>0.0</mean><stddev>0.01</stddev></noise></x>
+            <y><noise type='gaussian'><mean>0.0</mean><stddev>0.01</stddev></noise></y>
+            <z><noise type='gaussian'><mean>9.81</mean><stddev>0.01</stddev></noise></z>
+          </linear_acceleration>
+        </imu>
+        <plugin name='imu_plugin' filename='libgazebo_ros_imu_sensor.so'>
+          <ros>{
+            'remapping': {'imu': '/fc30/imu'}
+          }</ros>
+          <update_rate>100.0</update_rate>
+          <frame_name>base_link</frame_name>
+        </plugin>
+      </sensor>
+      
+      <!-- GPS -->
+      <sensor name='gps' type='gps'>
+        <pose>0 0 0 0 0 0</pose>
+        <gps>
+          <position_sensing>
+            <horizontal>
+              <noise type='gaussian'><mean>0.0</mean><stddev>0.5</stddev></noise>
+            </horizontal>
+            <vertical>
+              <noise type='gaussian'><mean>0.0</mean><stddev>1.0</stddev></noise>
+            </vertical>
+          </position_sensing>
+          <velocity_sensing>
+            <horizontal>
+              <noise type='gaussian'><mean>0.0</mean><stddev>0.1</stddev></noise>
+            </horizontal>
+            <vertical>
+              <noise type='gaussian'><mean>0.0</mean><stddev>0.2</stddev></noise>
+            </vertical>
+          </velocity_sensing>
+        </gps>
+        <plugin name='gps_plugin' filename='libgazebo_ros_gps_sensor.so'>
+          <ros>{
+            'remapping': {'gps/fix': '/fc30/gps/fix', 'gps/vel': '/fc30/gps/vel'}
+          }</ros>
+          <update_rate>10.0</update_rate>
+          <frame_name>base_link</frame_name>
+        </plugin>
+      </sensor>
+    </link>
+    
+    <!-- Rotors -->
+    <link name='rotor_front_left'>
+      <pose>0.15 0.15 0.05 0 0 0</pose>
+      <collision name='rotor_front_left_collision'>
+        <geometry>
+          <cylinder>
+            <radius>0.05</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='rotor_front_left_visual'>
+        <geometry>
+          <cylinder>
+            <radius>0.05</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Black</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    
+    <link name='rotor_front_right'>
+      <pose>0.15 -0.15 0.05 0 0 0</pose>
+      <collision name='rotor_front_right_collision'>
+        <geometry>
+          <cylinder>
+            <radius>0.05</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='rotor_front_right_visual'>
+        <geometry>
+          <cylinder>
+            <radius>0.05</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Black</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    
+    <link name='rotor_back_left'>
+      <pose>-0.15 0.15 0.05 0 0 0</pose>
+      <collision name='rotor_back_left_collision'>
+        <geometry>
+          <cylinder>
+            <radius>0.05</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='rotor_back_left_visual'>
+        <geometry>
+          <cylinder>
+            <radius>0.05</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Black</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    
+    <link name='rotor_back_right'>
+      <pose>-0.15 -0.15 0.05 0 0 0</pose>
+      <collision name='rotor_back_right_collision'>
+        <geometry>
+          <cylinder>
+            <radius>0.05</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='rotor_back_right_visual'>
+        <geometry>
+          <cylinder>
+            <radius>0.05</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Black</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+    
+    <!-- Joints -->
+    <joint name='rotor_front_left_joint' type='revolute'>
+      <parent>base_link</parent>
+      <child>rotor_front_left</child>
+      <pose>0 0 0 0 0 0</pose>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e16</lower>
+          <upper>1e16</upper>
+        </limit>
+      </axis>
+    </joint>
+    
+    <joint name='rotor_front_right_joint' type='revolute'>
+      <parent>base_link</parent>
+      <child>rotor_front_right</child>
+      <pose>0 0 0 0 0 0</pose>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e16</lower>
+          <upper>1e16</upper>
+        </limit>
+      </axis>
+    </joint>
+    
+    <joint name='rotor_back_left_joint' type='revolute'>
+      <parent>base_link</parent>
+      <child>rotor_back_left</child>
+      <pose>0 0 0 0 0 0</pose>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e16</lower>
+          <upper>1e16</upper>
+        </limit>
+      </axis>
+    </joint>
+    
+    <joint name='rotor_back_right_joint' type='revolute'>
+      <parent>base_link</parent>
+      <child>rotor_back_right</child>
+      <pose>0 0 0 0 0 0</pose>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e16</lower>
+          <upper>1e16</upper>
+        </limit>
+      </axis>
+    </joint>
+    
+    <!-- Velocity controllers -->
+    <plugin name='rotor_front_left_controller' filename='libgazebo_ros_joint_controller.so'>
+      <ros>{
+        'remapping': {
+          'joint_target_velocity': '/fc30/rotor_front_left/cmd_vel'
+        }
+      }</ros>
+      <joint_name>rotor_front_left_joint</joint_name>
+      <controller_name>front_left_velocity_controller</controller_name>
+      <interface_name>velocity</interface_name>
+    </plugin>
+    
+    <plugin name='rotor_front_right_controller' filename='libgazebo_ros_joint_controller.so'>
+      <ros>{
+        'remapping': {
+          'joint_target_velocity': '/fc30/rotor_front_right/cmd_vel'
+        }
+      }</ros>
+      <joint_name>rotor_front_right_joint</joint_name>
+      <controller_name>front_right_velocity_controller</controller_name>
+      <interface_name>velocity</interface_name>
+    </plugin>
+    
+    <plugin name='rotor_back_left_controller' filename='libgazebo_ros_joint_controller.so'>
+      <ros>{
+        'remapping': {
+          'joint_target_velocity': '/fc30/rotor_back_left/cmd_vel'
+        }
+      }</ros>
+      <joint_name>rotor_back_left_joint</joint_name>
+      <controller_name>back_left_velocity_controller</controller_name>
+      <interface_name>velocity</interface_name>
+    </plugin>
+    
+    <plugin name='rotor_back_right_controller' filename='libgazebo_ros_joint_controller.so'>
+      <ros>{
+        'remapping': {
+          'joint_target_velocity': '/fc30/rotor_back_right/cmd_vel'
+        }
+      }</ros>
+      <joint_name>rotor_back_right_joint</joint_name>
+      <controller_name>back_right_velocity_controller</controller_name>
+      <interface_name>velocity</interface_name>
+    </plugin>
+    
+    <!-- Gazebo ROS control plugin -->
+    <plugin name='gazebo_ros_control' filename='libgazebo_ros2_control.so'>
+      <ros>{
+        'remapping': {
+          'robot_description': '/robot_description'
+        }
+      }</ros>
+      <parameters>./config/controller_manager.yaml</parameters>
+    </plugin>
+    
+    <!-- PX4 sitl plugin (optional) -->
+    <plugin name='mavlink_interface' filename='libgazebo_ros_mavlink_interface.so'>
+      <ros>{
+        'remapping': {
+          'mavlink': '/mavlink'
+        }
+      }</ros>
+      <robotNamespace>/fc30</robotNamespace>
+      <serialEnabled>false</serialEnabled>
+      <tcpEnabled>true</tcpEnabled>
+      <tcpPort>4560</tcpPort>
+      <udpEnabled>false</udpEnabled>
+      <mavlinkID>1</mavlinkID>
+      <poseTopicName>/fc30/pose</poseTopicName>
+      <twistTopicName>/fc30/twist</twistTopicName>
+    </plugin>
+
+    <!-- Rotor Dynamics Plugins -->
+    <plugin name='rotor_front_left_dynamics' filename='librotor_dynamics_plugin.so'>
+      <jointName>rotor_front_left_joint</jointName>
+      <linkName>rotor_front_left</linkName>
+      <rotorRadius>0.1</rotorRadius>
+      <rotorMaxSpeed>1000.0</rotorMaxSpeed>
+      <rotorMaxThrust>7.0</rotorMaxThrust>
+      <rotorDragCoeff>0.01</rotorDragCoeff>
+      <rotorDirection>1</rotorDirection> <!-- Clockwise -->
+    </plugin>
+
+    <plugin name='rotor_front_right_dynamics' filename='librotor_dynamics_plugin.so'>
+      <jointName>rotor_front_right_joint</jointName>
+      <linkName>rotor_front_right</linkName>
+      <rotorRadius>0.1</rotorRadius>
+      <rotorMaxSpeed>1000.0</rotorMaxSpeed>
+      <rotorMaxThrust>7.0</rotorMaxThrust>
+      <rotorDragCoeff>0.01</rotorDragCoeff>
+      <rotorDirection>-1</rotorDirection> <!-- Counter-clockwise -->
+    </plugin>
+
+    <plugin name='rotor_back_left_dynamics' filename='librotor_dynamics_plugin.so'>
+      <jointName>rotor_back_left_joint</jointName>
+      <linkName>rotor_back_left</linkName>
+      <rotorRadius>0.1</rotorRadius>
+      <rotorMaxSpeed>1000.0</rotorMaxSpeed>
+      <rotorMaxThrust>7.0</rotorMaxThrust>
+      <rotorDragCoeff>0.01</rotorDragCoeff>
+      <rotorDirection>-1</rotorDirection> <!-- Counter-clockwise -->
+    </plugin>
+
+    <plugin name='rotor_back_right_dynamics' filename='librotor_dynamics_plugin.so'>
+      <jointName>rotor_back_right_joint</jointName>
+      <linkName>rotor_back_right</linkName>
+      <rotorRadius>0.1</rotorRadius>
+      <rotorMaxSpeed>1000.0</rotorMaxSpeed>
+      <rotorMaxThrust>7.0</rotorMaxThrust>
+      <rotorDragCoeff>0.01</rotorDragCoeff>
+      <rotorDirection>1</rotorDirection> <!-- Clockwise -->
+    </plugin>
+  </model>
+</sdf>

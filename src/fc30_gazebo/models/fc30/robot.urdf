@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+<robot name="fc30">
+  <!-- Base Link -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.3 0.3 0.1"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0.0 0.0 0.8 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.3 0.3 0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="2.5"/>
+      <inertia ixx="0.05" ixy="0.0" ixz="0.0" iyy="0.05" iyz="0.0" izz="0.08"/>
+    </inertial>
+  </link>
+
+  <!-- Rotor links -->
+  <link name="rotor_1">
+    <visual>
+      <geometry>
+        <cylinder length="0.02" radius="0.1"/>
+      </geometry>
+      <material name="red">
+        <color rgba="0.8 0.0 0.0 1.0"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="rotor_2">
+    <visual>
+      <geometry>
+        <cylinder length="0.02" radius="0.1"/>
+      </geometry>
+      <material name="red">
+        <color rgba="0.8 0.0 0.0 1.0"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="rotor_3">
+    <visual>
+      <geometry>
+        <cylinder length="0.02" radius="0.1"/>
+      </geometry>
+      <material name="red">
+        <color rgba="0.8 0.0 0.0 1.0"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="rotor_4">
+    <visual>
+      <geometry>
+        <cylinder length="0.02" radius="0.1"/>
+      </geometry>
+      <material name="red">
+        <color rgba="0.8 0.0 0.0 1.0"/>
+      </material>
+    </visual>
+  </link>
+
+  <!-- Rotor joints -->
+  <joint name="rotor_1_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="rotor_1"/>
+    <origin xyz="0.15 0.15 0.05" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="rotor_2_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="rotor_2"/>
+    <origin xyz="-0.15 0.15 0.05" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="rotor_3_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="rotor_3"/>
+    <origin xyz="-0.15 -0.15 0.05" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="rotor_4_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="rotor_4"/>
+    <origin xyz="0.15 -0.15 0.05" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Camera link -->
+  <link name="camera_link">
+    <visual>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+      <material name="green">
+        <color rgba="0.0 0.8 0.0 1.0"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="camera_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="camera_link"/>
+    <origin xyz="0 0 0.05" rpy="0 0 0"/>
+  </joint>
+</robot>

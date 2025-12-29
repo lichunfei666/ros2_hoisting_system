@@ -1,0 +1,22 @@
+Panels:
+  - Class: rviz_common/Displays
+    Help Height: 78
+    Name: Displays
+    Property Tree Widget:
+      Expanded: 
+        - /Global Options1
+        - /Status1
+        - /TF1
+        - /RobotModel1
+        - /LaserScan1
+        - /PointCloud21
+        - /Image1
+        - /Path1
+      Splitter Ratio: 0.5
+    Tree Height: 491
+  - Class: rviz_common/Views
+    Help Height: 78
+    Name: Views
+    Splitter Ratio: 0.5
+Visualization Manager:
+  Class:

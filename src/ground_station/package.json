@@ -1,0 +1,11 @@
+{
+  "name": "ground_station",
+  "version": "1.0.0",
+  "description": "ROS2智能吊装系统地面站",
+  "scripts": {
+    "install:roslib": "npm install roslib"
+  },
+  "dependencies": {
+    "roslib": "^1.4.1"
+  }
+}

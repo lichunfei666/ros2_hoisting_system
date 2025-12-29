@@ -1,0 +1,7 @@
+# 更新飞行控制配置服务
+# 请求：配置文件路径
+string config_path
+---
+# 响应：成功状态和消息
+bool success
+string message

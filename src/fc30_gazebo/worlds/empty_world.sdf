@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<sdf version='1.6'>
+  <world name='empty'>
+    <!-- Disable all physics -->
+    <physics name='default_physics' default='0' type='ode'>
+      <max_step_size>0</max_step_size>
+      <real_time_factor>0</real_time_factor>
+      <real_time_update_rate>0</real_time_update_rate>
+    </physics>
+    
+    <!-- No ground plane, no models, nothing -->
+    
+    <!-- White background -->
+    <scene>
+      <ambient>1 1 1 1</ambient>
+      <background>1 1 1 1</background>
+      <shadows>false</shadows>
+      <grid>false</grid>
+      <fog>
+        <enable>false</enable>
+      </fog>
+      <sky>
+        <enable>false</enable>
+      </sky>
+    </scene>
+    
+    <!-- No plugins -->
+  </world>
+</sdf>
