@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "ROS2智能吊装系统地面站",
   "scripts": {
-    "install:roslib": "npm install roslib"
+    "install:roslib": "npm install roslib",
+    "start": "cd resources && python3 -m http.server 8080"
   },
   "dependencies": {
     "roslib": "^1.4.1"

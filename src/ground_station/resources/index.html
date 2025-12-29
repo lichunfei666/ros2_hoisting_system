@@ -96,7 +96,7 @@
 <body class="bg-gradient-to-br from-dark to-dark-blue min-h-screen text-white font-sans overflow-hidden">
     <!-- 顶部导航栏 -->
     <header class="glass-effect sticky top-0 z-50 border-b border-light-blue/30">
-        <div class="container mx-auto px-4 py-2 flex items-center justify-between">
+        <div class="container mx-auto max-w-5xl px-2 py-1 flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <i class="fa fa-cube text-accent text-2xl"></i>
                 <h1 class="text-xl font-bold text-shadow">ROS2智能吊装系统</h1>
@@ -119,12 +119,12 @@
     </header>
 
     <!-- 主内容区 -->
-        <main id="main-content" class="container mx-auto px-2 py-2 flex flex-col lg:flex-row gap-2 h-[calc(100vh-70px)] overflow-hidden">
+        <main id="main-content" class="container mx-auto max-w-5xl px-1 py-1 flex flex-col lg:flex-row gap-1 h-[calc(100vh-50px)] overflow-hidden">
         <!-- 左侧控制面板 -->
-        <aside class="flex-1 lg:flex-[0_0_25%] glass-effect rounded-xl p-2 flex flex-col space-y-2 min-w-[250px] max-w-[300px] overflow-y-auto scrollbar-thin">
+        <aside class="flex-1 lg:flex-[0_0_25%] glass-effect rounded-xl p-1 flex flex-col space-y-1 min-w-[200px] max-w-[250px] overflow-y-auto scrollbar-thin">
             <div>
                 <h2 class="text-lg font-semibold mb-3 flex items-center">
-                    <i class="fa fa-tasks mr-2 text-accent"></i>
+                    <i class="fa fa-tasks mr-2 text-accent text-sm"></i>
                     任务控制
                 </h2>
                 <div class="space-y-2">
@@ -147,15 +147,15 @@
                     
                     <div class="space-y-1.5">
                         <button id="start-mission-btn" class="w-full flex items-center justify-center space-x-3 px-5 py-4 bg-secondary hover:bg-secondary/80 text-white rounded-lg transition-all duration-300 text-base font-medium">
-                            <i class="fa fa-play text-lg"></i>
+                            <i class="fa fa-play text-base"></i>
                             <span>开始任务</span>
                         </button>
                         <button id="pause-mission-btn" class="w-full flex items-center justify-center space-x-3 px-5 py-4 bg-warning/80 hover:bg-warning text-white rounded-lg transition-all duration-300 text-base font-medium" disabled>
-                            <i class="fa fa-pause text-lg"></i>
+                            <i class="fa fa-pause text-base"></i>
                             <span>暂停任务</span>
                         </button>
                         <button id="abort-mission-btn" class="w-full flex items-center justify-center space-x-3 px-5 py-4 bg-danger/80 hover:bg-danger text-white rounded-lg transition-all duration-300 text-base font-medium" disabled>
-                            <i class="fa fa-stop text-lg"></i>
+                            <i class="fa fa-stop text-base"></i>
                             <span>中止任务</span>
                         </button>
                     </div>
@@ -287,33 +287,24 @@
                         </div>
                     </div>
                     
-                    <div class="glass-effect-light rounded-lg p-2">
-                        <h3 class="text-sm font-medium text-light-blue mb-2">预设任务</h3>
-                        <select id="mission-template" class="w-full bg-dark-gray/50 border border-light-blue/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
-                            <option value="">选择预设任务...</option>
-                            <option value="hoisting">吊装任务</option>
-                            <option value="inspection">巡检任务</option>
-                            <option value="maintenance">维护任务</option>
-                            <option value="emergency">应急任务</option>
-                        </select>
-                    </div>
+
                 </div>
             </div>
         </aside>
 
         <!-- 中央视频显示区 -->
-        <section class="flex-1 lg:flex-[0_0_50%] flex flex-col space-y-2 min-w-[300px]">
+        <section class="flex-1 lg:flex-[0_0_45%] flex flex-col space-y-1 min-w-[250px]">
             <!-- 主视频显示 -->
-            <div class="glass-effect rounded-xl p-2 flex-1 flex flex-col min-h-[200px]">
-                <div class="flex justify-between items-center mb-2">
-                    <h2 class="text-lg font-semibold flex items-center">
-                        <i class="fa fa-video-camera mr-2 text-accent"></i>
+            <div class="glass-effect rounded-xl p-0.5 flex-1 flex flex-col min-h-[120px]">
+                <div class="flex justify-between items-center mb-1 px-1">
+                    <h2 class="text-base font-semibold flex items-center">
+                        <i class="fa fa-video-camera mr-1 text-accent"></i>
                         视频监控
                     </h2>
-                    <div class="flex space-x-1.5">
-                        <button class="video-source-btn px-3 py-1 bg-secondary/70 hover:bg-secondary text-white rounded-lg text-sm transition-all duration-300" data-source="drone">无人机</button>
-                        <button class="video-source-btn px-3 py-1 bg-dark-gray/50 hover:bg-secondary text-white rounded-lg text-sm transition-all duration-300" data-source="robot">机器人</button>
-                        <button class="video-source-btn px-3 py-1 bg-dark-gray/50 hover:bg-secondary text-white rounded-lg text-sm transition-all duration-300" data-source="global">全局</button>
+                    <div class="flex space-x-1">
+                        <button class="video-source-btn px-2 py-0.5 bg-secondary/70 hover:bg-secondary text-white rounded-lg text-xs transition-all duration-300" data-source="drone">无人机</button>
+                        <button class="video-source-btn px-2 py-0.5 bg-dark-gray/50 hover:bg-secondary text-white rounded-lg text-xs transition-all duration-300" data-source="robot">机器人</button>
+                        <button class="video-source-btn px-2 py-0.5 bg-dark-gray/50 hover:bg-secondary text-white rounded-lg text-xs transition-all duration-300" data-source="global">全局</button>
                     </div>
                 </div>
                 <div class="relative flex-1 bg-black rounded-lg overflow-hidden">
@@ -335,50 +326,50 @@
                     </div>
                     
                     <!-- 视频控制覆盖层 -->
-                    <div class="absolute bottom-4 left-4 right-4 glass-effect-light rounded-lg p-2 flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <button class="text-white hover:text-accent transition-colors">
+                    <div class="absolute bottom-2 left-2 right-2 glass-effect-light rounded-lg p-1 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <button class="text-white hover:text-accent transition-colors text-xs">
                                 <i class="fa fa-play"></i>
                             </button>
-                            <button class="text-white hover:text-accent transition-colors">
+                            <button class="text-white hover:text-accent transition-colors text-xs">
                                 <i class="fa fa-pause"></i>
                             </button>
-                            <button class="text-white hover:text-accent transition-colors">
+                            <button class="text-white hover:text-accent transition-colors text-xs">
                                 <i class="fa fa-expand"></i>
                             </button>
                         </div>
-                        <div class="flex items-center space-x-3">
+                        <div class="flex items-center space-x-2">
                             <span class="text-xs text-light-gray">00:05:23</span>
-                            <button class="text-white hover:text-accent transition-colors">
+                            <button class="text-white hover:text-accent transition-colors text-xs">
                                 <i class="fa fa-cog"></i>
                             </button>
                         </div>
                     </div>
                     
                     <!-- 视频状态覆盖层 -->
-                    <div class="absolute top-4 left-4 glass-effect-light rounded-lg px-3 py-1 text-xs">
+                    <div class="absolute top-2 left-2 glass-effect-light rounded-lg px-2 py-0.5 text-xs">
                         <span id="video-status" class="flex items-center">
-                            <span class="inline-block w-2 h-2 bg-success rounded-full mr-2 animate-pulse"></span>
-                            实时视频 (1080p)
+                            <span class="inline-block w-1.5 h-1.5 bg-success rounded-full mr-1 animate-pulse"></span>
+                            实时视频
                         </span>
                     </div>
                 </div>
             </div>
             
             <!-- 执行过程显示 -->
-            <div class="glass-effect rounded-xl p-2 flex-1 flex flex-col min-h-[200px]">
-                <div class="flex justify-between items-center mb-2">
-                    <h2 class="text-lg font-semibold flex items-center">
-                        <i class="fa fa-tasks mr-2 text-accent"></i>
+            <div class="glass-effect rounded-xl p-0.5 flex-1 flex flex-col min-h-[120px]">
+                <div class="flex justify-between items-center mb-1 px-1">
+                    <h2 class="text-base font-semibold flex items-center">
+                        <i class="fa fa-tasks mr-1 text-accent"></i>
                         执行过程
                     </h2>
                 </div>
                 <div class="relative flex-1 bg-dark-gray/30 rounded-lg overflow-hidden">
                     <!-- 执行过程显示区域 -->
-                    <div id="execution-process" class="w-full h-full p-4 overflow-y-auto scrollbar-thin">
-                        <div class="text-white text-center py-8">
-                            <i class="fa fa-hourglass-half text-4xl text-accent mb-3"></i>
-                            <p class="text-lg">等待任务执行...</p>
+                    <div id="execution-process" class="w-full h-full p-2 overflow-y-auto scrollbar-thin">
+                        <div class="text-white text-center py-4">
+                            <i class="fa fa-hourglass-half text-2xl text-accent mb-1"></i>
+                            <p class="text-sm">等待任务执行...</p>
                         </div>
                     </div>
                     
@@ -388,7 +379,7 @@
         </section>
 
         <!-- 右侧数据面板 -->
-        <aside class="flex-1 lg:flex-[0_0_25%] glass-effect rounded-xl p-3 flex flex-col space-y-3 min-w-[250px] max-w-[300px] overflow-y-auto scrollbar-thin">
+        <aside class="flex-1 lg:flex-[0_0_25%] glass-effect rounded-xl p-1 flex flex-col space-y-1 min-w-[200px] max-w-[250px] overflow-y-auto scrollbar-thin">
             <!-- 设备状态 -->
             <div>
                 <h2 class="text-lg font-semibold mb-3 flex items-center">
@@ -754,20 +745,16 @@
         
         // 开始任务按钮事件处理
         startMissionBtn.addEventListener('click', () => {
-            const missionTemplate = document.getElementById('mission-template').value;
-            if (!missionTemplate) {
-                addLogEntry('请选择预设任务', 'warning');
-                return;
-            }
+            const missionName = '自定义任务';
             
-            addLogEntry(`开始执行任务: ${missionTemplate}`);
-            document.getElementById('current-mission').innerHTML = `<span class="bg-secondary/50 px-3 py-1 rounded-full">${missionTemplate}</span>`;
-            updateExecutionProcess(`开始执行任务: ${missionTemplate}`);
+            addLogEntry(`开始执行任务: ${missionName}`);
+            document.getElementById('current-mission').innerHTML = `<span class="bg-secondary/50 px-3 py-1 rounded-full">${missionName}</span>`;
+            updateExecutionProcess(`开始执行任务: ${missionName}`);
             
             // 发布开始任务命令到任务控制话题
             const msg = new ROSLIB.Message({
                 command: 'start',
-                mission_type: missionTemplate,
+                mission_type: '',
                 timestamp: Date.now()
             });
             missionCmdPub.publish(msg);
