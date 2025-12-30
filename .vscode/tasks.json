@@ -43,7 +43,7 @@
         {
             "label": "Run dji_psdk_node",
             "type": "shell",
-            "command": "source install/local_setup.bash && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lcf/ros2_hoisting_system/install/dji_psdk_wrapper/lib/dji_psdk_wrapper && ros2 run dji_psdk_wrapper dji_psdk_node",
+            "command": "source install/local_setup.bash && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${workspaceFolder}/install/dji_psdk_wrapper/lib/dji_psdk_wrapper && ros2 run dji_psdk_wrapper dji_psdk_node",
             "problemMatcher": [],
             "group": "test",
             "options": {
