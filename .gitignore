@@ -33,3 +33,8 @@ __pycache__/
 
 # Large files from DJI PSDK samples
 src/dji_psdk_wrapper/third_party/dji_psdk/samples/sample_c++/module_sample/liveview/data/tensorflow/frozen_inference_graph.pb
+
+# VSCode database files (very large)
+src/dji_psdk_wrapper/third_party/dji_psdk/.vscode/browse.vc.db
+src/dji_psdk_wrapper/third_party/dji_psdk/.vscode/browse.vc.db-shm
+src/dji_psdk_wrapper/third_party/dji_psdk/.vscode/browse.vc.db-wal
