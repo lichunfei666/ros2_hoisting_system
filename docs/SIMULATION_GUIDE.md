@@ -17,7 +17,6 @@
 首先，确保所有包已成功构建：
 
 ```bash
-cd /home/lcf/ros2_hoisting_system
 colcon build --packages-select fc30_gazebo dji_psdk_wrapper communication
 ```
 
@@ -260,6 +259,12 @@ nano src/fc30_gazebo/launch/fc30_gazebo.launch.py
 ```
 
 将`world`参数从`fc30_enhanced_world.world`改为`fc30_world.world`。
+
+或者直接使用相对路径编辑：
+```bash
+# 编辑启动文件
+nano src/fc30_gazebo/launch/fc30_gazebo.launch.py
+```
 
 ## 7. 性能优化
 

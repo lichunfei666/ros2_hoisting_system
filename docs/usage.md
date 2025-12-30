@@ -8,11 +8,37 @@
 # 激活ROS 2系统环境
 source /opt/ros/jazzy/setup.bash
 
-# 激活项目环境
-source /home/lcf/ros2_hoisting_system/install/setup.bash
+# 激活项目环境（相对路径）
+source install/setup.bash
 ```
 
-## 运行节点
+## 一键启动所有服务
+
+系统提供了一键启动脚本，可以方便地启动所有必要服务：
+
+```bash
+# 运行一键启动脚本
+./start_all.sh
+```
+
+该脚本将启动以下服务：
+- HTTP服务（用于地面站Web界面）
+- rosbridge服务（WebSocket通信）
+- 无人机节点（dji_psdk_node）
+- 地面站节点（ground_station_node）
+
+## 一键停止所有服务
+
+系统提供了一键停止脚本，可以方便地停止所有服务：
+
+```bash
+# 运行一键停止脚本
+./stop_all.sh
+```
+
+## 单独运行节点
+
+如果需要单独运行某个节点，可以使用以下命令：
 
 ### 1. 运行DJI PSDK节点
 
@@ -20,7 +46,7 @@ DJI PSDK节点是系统的核心节点，负责与DJI无人机通信：
 
 ```bash
 # 运行PSDK节点
-ros2 run dji_psdk_wrapper psdk_node
+ros2 run dji_psdk_wrapper dji_psdk_node
 ```
 
 ### 2. 运行无人机控制节点

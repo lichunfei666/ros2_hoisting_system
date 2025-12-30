@@ -36,9 +36,9 @@ sudo apt-get install -y libusb-1.0-0-dev libyaml-cpp-dev
 2. 解压到项目的 third_party 目录：
 
 ```bash
-mkdir -p /home/lcf/ros2_hoisting_system/third_party
-tar -xzvf DJI_PSDK_3.14.0.tar.gz -C /home/lcf/ros2_hoisting_system/third_party/
-mv /home/lcf/ros2_hoisting_system/third_party/DJI_PSDK_3.14.0 /home/lcf/ros2_hoisting_system/third_party/dji_psdk
+mkdir -p third_party
+tar -xzvf DJI_PSDK_3.14.0.tar.gz -C third_party/
+mv third_party/DJI_PSDK_3.14.0 third_party/dji_psdk
 ```
 
 ## 项目编译
@@ -46,8 +46,8 @@ mv /home/lcf/ros2_hoisting_system/third_party/DJI_PSDK_3.14.0 /home/lcf/ros2_hoi
 1. 克隆项目到本地：
 
 ```bash
-git clone <项目仓库地址> /home/lcf/ros2_hoisting_system
-cd /home/lcf/ros2_hoisting_system
+git clone <项目仓库地址>
+cd ros2_hoisting_system
 ```
 
 2. 编译项目：
