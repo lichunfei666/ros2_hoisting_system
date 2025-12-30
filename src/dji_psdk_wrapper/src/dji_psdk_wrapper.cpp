@@ -578,17 +578,18 @@ T_DjiReturnCode PSDKWrapper::emergencyStop()
     return DJI_ERROR_SYSTEM_MODULE_CODE_NOT_FOUND;
   }
   
-  PSDK_FATAL("PSDKWrapper", "执行紧急停飞操作");
+  PSDK_FATAL("PSDKWrapper", "执行紧急停桨操作");
   
-  // 使用强制停飞API
-  // ArrestFlying: 强制停飞并保持电机运行
-  // EmergencyStopMotor: 紧急停桨（更紧急的情况使用）
-  T_DjiReturnCode result = DjiFlightController_ArrestFlying();
+  // 使用紧急停桨API
+  // EmergencyStopMotor: 紧急停桨，直接停止电机（更紧急的情况使用）
+  // ArrestFlying: 强制停飞并保持电机运行（原实现）
+  char debugMsg[EMERGENCY_STOP_MOTOR_MSG_MAX_LENGTH] = "Emergency"; // 10字节以内的调试信息
+  T_DjiReturnCode result = DjiFlightController_EmergencyStopMotor(DJI_FLIGHT_CONTROLLER_ENABLE_EMERGENCY_STOP_MOTOR, debugMsg);
   
   if (result == DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
-    PSDK_INFO("PSDKWrapper", "紧急停飞执行成功");
+    PSDK_INFO("PSDKWrapper", "紧急停桨执行成功");
   } else {
-    PSDK_ERROR("PSDKWrapper", "紧急停飞执行失败，错误码: 0x%08X", result);
+    PSDK_ERROR("PSDKWrapper", "紧急停桨执行失败，错误码: 0x%08X", result);
   }
   
   lastError_ = result;
@@ -1111,15 +1112,15 @@ T_DjiReturnCode PSDKWrapper::getBatteryInfo(T_DjiBatteryInfo *batteryInfo)
   }
   
   // 没有整体电池信息可用（已删除相关订阅）
-  if (need_log_debug) {
-    PSDK_WARNING("PSDKWrapper", "整体电池数据不可用（已删除相关订阅），使用模拟数据");
-  }
+  // if (need_log_debug) {
+  //   PSDK_DEBUG("PSDKWrapper", "整体电池数据不可用（已删除相关订阅），使用模拟数据");
+  // }
   
   // 如果没有真实数据，返回模拟的电池数据
   batteryInfo->batteryId = 255; // 使用特殊ID 255标识模拟数据
   batteryInfo->voltage = 0.0;
   batteryInfo->current = 0.0;
-  batteryInfo->percentage = 0;
+  batteryInfo->percentage = 100; // 默认模拟数据设为100%电量
   batteryInfo->temperature = 0;
   
   // 仅在需要时打印调试信息（每秒一次）

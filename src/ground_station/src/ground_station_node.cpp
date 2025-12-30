@@ -2,9 +2,7 @@
 #include <rclcpp/logging.hpp>
 #include <communication/msg/system_state.hpp>
 #include <communication/msg/mission_command.hpp>
-#include <communication/msg/drone_command.hpp>
 #include <communication/msg/robot_command.hpp>
-#include <communication/msg/hook_command.hpp>
 #include <communication/msg/psdk_cmd.hpp>
 #include <std_msgs/msg/header.hpp>
 #include <std_srvs/srv/trigger.hpp>
@@ -72,7 +70,6 @@ class GroundStationNode : public rclcpp::Node
 private:
     // 发布者
     rclcpp::Publisher<communication::msg::SystemState>::SharedPtr system_state_pub_;
-    rclcpp::Publisher<communication::msg::DroneCommand>::SharedPtr drone_command_pub_;
     rclcpp::Publisher<communication::msg::PSDKCmd>::SharedPtr psdk_cmd_pub_;
     
     // 服务
@@ -87,7 +84,7 @@ private:
     rclcpp::Subscription<communication::msg::SystemState>::SharedPtr drone_state_sub_;
     rclcpp::Subscription<communication::msg::MissionCommand>::SharedPtr mission_cmd_sub_;
     // 无人机命令订阅者（订阅前端命令）
-    rclcpp::Subscription<communication::msg::DroneCommand>::SharedPtr drone_command_sub_;
+    rclcpp::Subscription<communication::msg::PSDKCmd>::SharedPtr drone_command_sub_;
     
     // 定时器
     rclcpp::TimerBase::SharedPtr timer_;
@@ -197,12 +194,12 @@ private:
         CUSTOM_LOG_ERROR(this, "触发应急措施: 发送紧急停飞命令");
         
         // 发送紧急停飞命令
-        auto emergency_cmd = communication::msg::DroneCommand();
+        auto emergency_cmd = communication::msg::PSDKCmd();
         emergency_cmd.header.stamp = this->get_clock()->now();
-        emergency_cmd.command_type = communication::msg::DroneCommand::COMMAND_TYPE_EMERGENCY_STOP;
-        emergency_cmd.emergency_stop = true;
+        emergency_cmd.command_type = communication::msg::PSDKCmd::CMD_TYPE_EMERGENCY_STOP;
+        emergency_cmd.emergency = true;
         
-        drone_command_pub_->publish(emergency_cmd);
+        psdk_cmd_pub_->publish(emergency_cmd);
         
         // 更新系统状态
         system_state_.emergency_stop = true;
@@ -222,24 +219,24 @@ private:
      * 
      * @param msg 无人机控制命令消息指针
      */
-    void drone_command_callback(const communication::msg::DroneCommand::SharedPtr msg)
+    void drone_command_callback(const communication::msg::PSDKCmd::SharedPtr msg)
     {
         // 将数字命令类型转换为中文描述以提高日志可读性
         std::string command_desc;
         switch(msg->command_type) {
-            case communication::msg::DroneCommand::COMMAND_TYPE_TAKEOFF: command_desc = "起飞";
+            case communication::msg::PSDKCmd::CMD_TYPE_TAKEOFF: command_desc = "起飞";
                 break;
-            case communication::msg::DroneCommand::COMMAND_TYPE_LAND: command_desc = "降落";
+            case communication::msg::PSDKCmd::CMD_TYPE_LAND: command_desc = "降落";
                 break;
-            case communication::msg::DroneCommand::COMMAND_TYPE_MOVE: command_desc = "移动";
+            case communication::msg::PSDKCmd::CMD_TYPE_MOVE: command_desc = "移动";
                 break;
-            case communication::msg::DroneCommand::COMMAND_TYPE_HOVER: command_desc = "悬停";
+            case communication::msg::PSDKCmd::CMD_TYPE_HOVER: command_desc = "悬停";
                 break;
-            case communication::msg::DroneCommand::COMMAND_TYPE_RETURN_HOME: command_desc = "返航";
+            case communication::msg::PSDKCmd::CMD_TYPE_RETURN_HOME: command_desc = "返航";
                 break;
-            case communication::msg::DroneCommand::COMMAND_TYPE_SET_MODE: command_desc = "设置模式";
+            case communication::msg::PSDKCmd::CMD_TYPE_HOOK_CONTROL: command_desc = "钩子控制";
                 break;
-            case communication::msg::DroneCommand::COMMAND_TYPE_EMERGENCY_STOP: command_desc = "紧急停止";
+            case communication::msg::PSDKCmd::CMD_TYPE_EMERGENCY_STOP: command_desc = "紧急停止";
                 break;
             default: command_desc = "未知命令 (" + std::to_string(msg->command_type) + ")";
         }
@@ -247,7 +244,7 @@ private:
         CUSTOM_LOG_INFO(this, "接收到前端无人机控制命令: %s", command_desc.c_str());
         
         // 转发命令给无人机节点
-        drone_command_pub_->publish(*msg);
+        psdk_cmd_pub_->publish(*msg);
     }
     
     /**
@@ -271,12 +268,12 @@ private:
         emergency_stop_triggered_ = false;
         
         // 发送解除紧急停止命令
-        auto clear_cmd = communication::msg::DroneCommand();
+        auto clear_cmd = communication::msg::PSDKCmd();
         clear_cmd.header.stamp = this->get_clock()->now();
-        clear_cmd.command_type = communication::msg::DroneCommand::COMMAND_TYPE_EMERGENCY_STOP;
-        clear_cmd.emergency_stop = false;
+        clear_cmd.command_type = communication::msg::PSDKCmd::CMD_TYPE_EMERGENCY_STOP;
+        clear_cmd.emergency = false;
         
-        drone_command_pub_->publish(clear_cmd);
+        psdk_cmd_pub_->publish(clear_cmd);
         
         // 更新系统状态
         system_state_.emergency_stop = false;
@@ -355,7 +352,6 @@ public:
 
         // 初始化发布者
         system_state_pub_ = this->create_publisher<communication::msg::SystemState>("/system_state", 10);
-        drone_command_pub_ = this->create_publisher<communication::msg::DroneCommand>("/drone/command", 10);
         psdk_cmd_pub_ = this->create_publisher<communication::msg::PSDKCmd>("/drone/psdk_cmd", 10);
         
         // 初始化服务
@@ -407,7 +403,8 @@ public:
             std::bind(&GroundStationNode::drone_state_callback, this, std::placeholders::_1));
             
         // 订阅前端无人机命令话题（从前端接收控制命令）
-        drone_command_sub_ = this->create_subscription<communication::msg::DroneCommand>(
+        // 使用PSDKCmd替代DroneCommand
+        drone_command_sub_ = this->create_subscription<communication::msg::PSDKCmd>(
             "/frontend/drone/command", 10, 
             std::bind(&GroundStationNode::drone_command_callback, this, std::placeholders::_1));
             

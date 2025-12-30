@@ -17,9 +17,7 @@ find_package(geometry_msgs REQUIRED)
   "msg/PSDKCmd.msg"
   "msg/SystemState.msg"
   "msg/MissionCommand.msg"
-  "msg/DroneCommand.msg"
   "msg/RobotCommand.msg"
-  "msg/HookCommand.msg"
   "msg/BatteryInfo.msg"
 )
 

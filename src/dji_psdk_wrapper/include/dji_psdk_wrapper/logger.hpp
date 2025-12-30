@@ -31,6 +31,8 @@
 #include <iostream>
 #include <fstream>
 #include <cstdarg>
+#include <sys/stat.h>
+#include <string.h>
 #include <yaml-cpp/yaml.h>
 #include "rclcpp/rclcpp.hpp"
 #include "rcutils/logging.h"
@@ -127,8 +129,8 @@ public:
       // 更新日志文件路径
       logFilePath_ = filePath;
       
-      // 尝试打开日志文件
-      logFileStream_.open(logFilePath_, std::ios::out | std::ios::app);
+      // 尝试打开日志文件，使用覆盖模式而不是追加模式
+      logFileStream_.open(logFilePath_, std::ios::out);
       if (logFileStream_.is_open())
       {
         // 启用文件日志功能
@@ -141,33 +143,7 @@ public:
         enableFileLog_ = false;
       }
       
-      // 设置终端日志文件路径（与psdk.log同目录）
-      size_t lastSlash = logFilePath_.find_last_of("/\\");
-      if (lastSlash != std::string::npos)
-      {
-        terminalLogFilePath_ = logFilePath_.substr(0, lastSlash + 1) + "terminal_" + getCurrentTimeStringForFilename() + ".log";
-      }
-      else
-      {
-        terminalLogFilePath_ = "terminal_" + getCurrentTimeStringForFilename() + ".log";
-      }
-      
-      // 尝试打开终端日志文件
-      if (terminalLogStream_.is_open())
-      {
-        terminalLogStream_.close();
-      }
-      
-      terminalLogStream_.open(terminalLogFilePath_, std::ios::out);
-      if (terminalLogStream_.is_open())
-      {
-        enableTerminalLogFile_ = true;
-      }
-      else
-      {
-        std::cerr << "Failed to open terminal log file: " << terminalLogFilePath_ << std::endl;
-        enableTerminalLogFile_ = false;
-      }
+      // 不再创建终端日志文件，避免与节点日志重复
     }
     catch (const std::exception& e)
     {
@@ -508,12 +484,11 @@ private:
     logLevel_(LogLevel::DEBUG), 
     enableConsoleLog_(true), 
     enableFileLog_(false),
-    enableTerminalLogFile_(true),
+    enableTerminalLogFile_(false), // 禁用终端日志文件，避免与dji_psdk_node.log重复
     logFilePath_(),
     terminalLogFilePath_("terminal.log") // 先使用默认值
   {
-    // 初始化终端日志文件路径（在构造函数体内调用成员函数）
-    terminalLogFilePath_ = "terminal_" + getCurrentTimeStringForFilename() + ".log";
+    // 不再生成终端日志文件，避免与节点日志重复
     
     // 初始化ROS2日志器级别为DEBUG，确保DEBUG级别日志能够显示
     rcutils_ret_t ret = rcutils_logging_set_logger_level("psdk_wrapper", RCUTILS_LOG_SEVERITY_DEBUG);

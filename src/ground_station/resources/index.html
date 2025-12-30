@@ -697,7 +697,7 @@
         droneCmdPub = new ROSLIB.Topic({
             ros: ros,
             name: '/frontend/drone/command',
-            messageType: 'communication/msg/DroneCommand'
+            messageType: 'communication/msg/PSDKCmd'
         });
             
             // 发布机器人命令话题
@@ -711,7 +711,7 @@
             hookCmdPub = new ROSLIB.Topic({
                 ros: ros,
                 name: '/hook/cmd',
-                messageType: 'communication/msg/HookCommand'
+                messageType: 'communication/msg/PSDKCmd'
             });
         }
         
@@ -939,9 +939,35 @@
                     addLogEntry(`[命令发送] 无人机: ${action}`, 'info');
                     droneCmdPub.publish(msg);
                 } else if (device === '挂钩') {
+                    let commandType, commandParams = {};
+                    
+                    switch (action) {
+                        case '打开':
+                            commandType = 5; // CMD_TYPE_HOOK_CONTROL
+                            commandParams.hook_action = 0; // HOOK_ACTION_OPEN
+                            break;
+                        case '关闭':
+                            commandType = 5; // CMD_TYPE_HOOK_CONTROL
+                            commandParams.hook_action = 1; // HOOK_ACTION_CLOSE
+                            break;
+                        case '释放':
+                            commandType = 5; // CMD_TYPE_HOOK_CONTROL
+                            commandParams.hook_action = 2; // HOOK_ACTION_RELEASE
+                            commandParams.emergency_release = true;
+                            break;
+                        default:
+                            console.log(`未知的挂钩动作: ${action}`);
+                            return;
+                    }
+                    
                     const msg = new ROSLIB.Message({
-                        command: action,
-                        timestamp: Date.now()
+                        header: {
+                            stamp: ROSLIB.Time.now(),
+                            frame_id: 'ground_station'
+                        },
+                        command_type: commandType,
+                        emergency: false,
+                        ...commandParams
                     });
                     console.log(`[调试] 发送挂钩控制命令: ${action}`, msg);
                     addLogEntry(`[命令发送] 挂钩: ${action}`, 'info');

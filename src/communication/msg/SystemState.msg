@@ -9,10 +9,6 @@ string mode  # manual, auto, semi_auto, emergency
 string status  # normal, warning, error, critical
 
 # Power information
-float64 battery_percentage  # Battery level in % (deprecated - use battery1 or battery2 fields)
-float64 battery_voltage  # Battery voltage in V (deprecated - use battery1 or battery2 fields)
-float64 battery_current  # Battery current in A (deprecated - use battery1 or battery2 fields)
-
 # Individual battery information
 communication/BatteryInfo battery1  # Battery 1 information
 communication/BatteryInfo battery2  # Battery 2 information

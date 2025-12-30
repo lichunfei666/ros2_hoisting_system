@@ -5,8 +5,6 @@
 #include <std_srvs/srv/trigger.hpp>
 #include <communication/msg/system_state.hpp>
 #include <communication/msg/battery_info.hpp>
-#include <communication/msg/hook_command.hpp>
-#include <communication/msg/drone_command.hpp>
 #include <communication/msg/psdk_cmd.hpp>
 #include <communication/srv/update_flight_control_config.hpp>
 
@@ -89,15 +87,8 @@ public:
 
 
     // 初始化订阅者
-    hook_command_sub_ = this->create_subscription<communication::msg::HookCommand>(
-      "drone/hook_command", 10, std::bind(&PSDKNode::hook_command_callback, this, std::placeholders::_1));
-    
     psdk_cmd_sub_ = this->create_subscription<communication::msg::PSDKCmd>(
-      "drone/psdk_cmd", 10, std::bind(&PSDKNode::psdk_cmd_callback, this, std::placeholders::_1));
-    
-    // 初始化无人机命令订阅者
-    drone_command_sub_ = this->create_subscription<communication::msg::DroneCommand>(
-      "/frontend/drone/command", 10, std::bind(&PSDKNode::drone_command_callback, this, std::placeholders::_1));
+      "/drone/psdk_cmd", 10, std::bind(&PSDKNode::psdk_cmd_callback, this, std::placeholders::_1));
 
     // 初始化定时器
     state_publish_timer_ = this->create_wall_timer(
@@ -163,9 +154,7 @@ private:
 
 
   // 订阅者
-  rclcpp::Subscription<communication::msg::HookCommand>::SharedPtr hook_command_sub_;  // 挂钩命令订阅者
   rclcpp::Subscription<communication::msg::PSDKCmd>::SharedPtr psdk_cmd_sub_;  // PSDK命令订阅者
-  rclcpp::Subscription<communication::msg::DroneCommand>::SharedPtr drone_command_sub_;  // 无人机命令订阅者
   
   // 服务
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr turn_on_motors_srv_;  // 启动电机服务
@@ -309,16 +298,14 @@ private:
     T_DjiBatteryInfo battery_info;
     if (psdk_wrapper_->getBatteryInfo(&battery_info) == DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS)
     {
-      // 保留旧字段以保持向后兼容性
-      state_msg.battery_percentage = battery_info.percentage;
-      state_msg.battery_voltage = static_cast<double>(battery_info.voltage) / 1000.0; // 转换为V
-      state_msg.battery_current = static_cast<double>(battery_info.current) / 1000.0; // 转换为A
+      // 更新主电池信息到battery1
+      state_msg.battery1.available = true;
+      state_msg.battery1.voltage = static_cast<double>(battery_info.voltage) / 1000.0; // 转换为V
+      state_msg.battery1.current = static_cast<double>(battery_info.current) / 1000.0; // 转换为A
+      state_msg.battery1.percentage = battery_info.percentage;
     }
     else
     {
-      state_msg.battery_percentage = 100.0;
-      state_msg.battery_voltage = 0.0;
-      state_msg.battery_current = 0.0;
       RCLCPP_DEBUG(this->get_logger(), "获取电池信息失败");
     }
     
@@ -408,81 +395,6 @@ private:
   }
 
   /**
-   * @brief 处理挂钩命令
-   * 
-   * 接收挂钩命令消息，调用PSDK包装器的controlHook方法执行命令。
-   * 记录命令执行结果的日志信息。
-   * 
-   * @param msg 挂钩命令消息，包含动作类型、力度、持续时间和紧急释放标志
-   */
-  void hook_command_callback(const communication::msg::HookCommand::SharedPtr msg)
-  {
-    RCLCPP_INFO(this->get_logger(), "Received hook command action type: %d", msg->action_type);
-    
-    // 目前PSDKWrapper类中没有controlHook函数，这里只是打印日志
-    RCLCPP_INFO(this->get_logger(), "Hook command received but not implemented: action_type=%d", msg->action_type);
-  }
-
-  /**
-   * @brief 无人机命令回调函数
-   * 
-   * 处理来自地面站的无人机命令，包括起飞、降落、紧急停止等命令。
-   */
-  void drone_command_callback(const communication::msg::DroneCommand::SharedPtr msg)
-  {
-    RCLCPP_INFO(this->get_logger(), "Received drone command: type=%d, emergency_stop=%d", 
-                msg->command_type, msg->emergency_stop);
-    
-    // 处理起飞命令
-    if (msg->command_type == communication::msg::DroneCommand::COMMAND_TYPE_TAKEOFF) {
-      RCLCPP_INFO(this->get_logger(), "执行起飞命令，目标高度: %.2f米", msg->takeoff_height);
-      
-      // 调用PSDK的启动电机API（DJI PSDK中启动电机通常是起飞的第一步）
-      T_DjiReturnCode result = psdk_wrapper_->turnOnMotors();
-      if (result == DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
-        RCLCPP_INFO(this->get_logger(), "电机启动成功，无人机开始起飞");
-      } else {
-        RCLCPP_ERROR(this->get_logger(), "电机启动失败，错误码: 0x%08lX", result);
-      }
-    }
-    // 处理降落命令
-    else if (msg->command_type == communication::msg::DroneCommand::COMMAND_TYPE_LAND) {
-      RCLCPP_INFO(this->get_logger(), "执行降落命令，降落速度: %.2f米/秒", msg->landing_speed);
-      
-      // 调用PSDK的关闭电机API（DJI PSDK中关闭电机通常会触发降落）
-      T_DjiReturnCode result = psdk_wrapper_->turnOffMotors();
-      if (result == DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
-        RCLCPP_INFO(this->get_logger(), "降落命令执行成功");
-      } else {
-        RCLCPP_ERROR(this->get_logger(), "降落命令执行失败，错误码: 0x%08lX", result);
-      }
-    }
-    // 处理紧急停止命令
-    else if (msg->command_type == communication::msg::DroneCommand::COMMAND_TYPE_EMERGENCY_STOP) {
-      if (msg->emergency_stop) {
-        // 触发紧急停止
-        RCLCPP_ERROR(this->get_logger(), "执行紧急停止命令");
-        
-        // 调用PSDK的紧急停飞API
-        T_DjiReturnCode result = psdk_wrapper_->emergencyStop();
-        if (result == DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
-          RCLCPP_INFO(this->get_logger(), "紧急停止执行成功");
-        } else {
-          RCLCPP_ERROR(this->get_logger(), "紧急停止执行失败，错误码: 0x%08lX", result);
-        }
-      } else {
-        // 解除紧急停止
-        RCLCPP_INFO(this->get_logger(), "解除紧急停止命令");
-        // 注意：PSDK的紧急停止通常需要手动解除或重启系统
-      }
-    }
-    // 处理其他命令类型
-    else {
-      RCLCPP_WARN(this->get_logger(), "未处理的无人机命令类型: %d", msg->command_type);
-    }
-  }
-
-  /**
    * @brief 处理PSDK命令
    * 
    * 接收PSDK命令消息，处理Waypoint V3相关的命令操作。
@@ -546,6 +458,49 @@ private:
         } else {
           RCLCPP_ERROR(this->get_logger(), "Failed to resume Waypoint V3 mission, error code: 0x%08lX", result);
         }
+        break;
+        
+      case communication::msg::PSDKCmd::CMD_TYPE_TAKEOFF:
+        RCLCPP_INFO(this->get_logger(), "执行起飞命令，目标高度: %.2f米", msg->takeoff_height);
+        
+        // 调用PSDK的启动电机API（DJI PSDK中启动电机通常是起飞的第一步）
+        result = psdk_wrapper_->turnOnMotors();
+        if (result == DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
+          RCLCPP_INFO(this->get_logger(), "电机启动成功，无人机开始起飞");
+        } else {
+          RCLCPP_ERROR(this->get_logger(), "电机启动失败，错误码: 0x%08lX", result);
+        }
+        break;
+        
+      case communication::msg::PSDKCmd::CMD_TYPE_LAND:
+        RCLCPP_INFO(this->get_logger(), "执行降落命令，降落速度: %.2f米/秒", msg->landing_speed);
+        
+        // 调用PSDK的关闭电机API（DJI PSDK中关闭电机通常会触发降落）
+        result = psdk_wrapper_->turnOffMotors();
+        if (result == DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
+          RCLCPP_INFO(this->get_logger(), "降落命令执行成功");
+        } else {
+          RCLCPP_ERROR(this->get_logger(), "降落命令执行失败，错误码: 0x%08lX", result);
+        }
+        break;
+        
+      case communication::msg::PSDKCmd::CMD_TYPE_EMERGENCY_STOP:
+        RCLCPP_INFO(this->get_logger(), "执行紧急停止命令");
+        
+        // 调用PSDK的紧急停飞API
+        result = psdk_wrapper_->emergencyStop();
+        if (result == DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
+          RCLCPP_INFO(this->get_logger(), "紧急停止执行成功");
+        } else {
+          RCLCPP_ERROR(this->get_logger(), "紧急停止执行失败，错误码: 0x%08lX", result);
+        }
+        break;
+        
+      case communication::msg::PSDKCmd::CMD_TYPE_HOOK_CONTROL:
+        RCLCPP_INFO(this->get_logger(), "Received hook command action type: %d", msg->hook_action);
+        
+        // 目前PSDKWrapper类中没有controlHook函数，这里只是打印日志
+        RCLCPP_INFO(this->get_logger(), "Hook command received but not implemented: action_type=%d", msg->hook_action);
         break;
         
       default:
