@@ -12,10 +12,7 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
 # Declare ROS messages and services
-set(msg_files
-  "msg/DataFrame.msg"
-  "msg/GroundStationData.msg"
-  "msg/HoistData.msg"
+  set(msg_files
   "msg/PSDKData.msg"
   "msg/PSDKCmd.msg"
   "msg/SystemState.msg"
@@ -24,7 +21,6 @@ set(msg_files
   "msg/RobotCommand.msg"
   "msg/HookCommand.msg"
   "msg/BatteryInfo.msg"
-  "msg/TimeSyncStatus.msg"
 )
 
 set(srv_files
