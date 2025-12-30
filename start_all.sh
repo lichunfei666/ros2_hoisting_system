@@ -4,8 +4,8 @@
 
 echo "=== 正在启动ROS2智能吊装系统所有服务 ==="
 
-# 设置工作目录
-WORKSPACE_DIR="/home/lcf/ros2_hoisting_system"
+# 设置工作目录（使用相对路径，自动获取脚本所在目录）
+WORKSPACE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 HTTP_DIR="${WORKSPACE_DIR}/src/ground_station/resources"
 
 # 检查是否已激活ROS环境

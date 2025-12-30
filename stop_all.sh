@@ -4,8 +4,8 @@
 
 echo "=== 正在停止ROS2智能吊装系统所有服务 ==="
 
-# 设置工作目录
-WORKSPACE_DIR="/home/lcf/ros2_hoisting_system"
+# 设置工作目录（使用相对路径，自动获取脚本所在目录）
+WORKSPACE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PID_FILE="${WORKSPACE_DIR}/all_services.pid"
 
 # 检查PID文件是否存在
